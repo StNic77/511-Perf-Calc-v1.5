@@ -1474,3 +1474,164 @@ body.chart-viewer-open {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+   Splash / Disclaimer screen
+   ============================================================================ */
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px 40px;
+}
+
+.splash__inner {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.splash__photo-wrap {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.splash__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.splash__title-block {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.splash__aircraft {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.splash__appname {
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.splash__credit {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.splash__version {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.splash__disclaimer {
+  background: color-mix(in srgb, #ef4444 10%, var(--panel));
+  border: 1.5px solid #ef4444;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  width: 100%;
+}
+
+.splash__disclaimer-header {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  color: #ff5a73;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+
+.splash__disclaimer p {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.splash__disclaimer p:last-child {
+  margin-bottom: 0;
+}
+
+.splash__disclaimer strong {
+  color: var(--warn);
+}
+
+.splash__accept {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s;
+}
+
+.splash__accept:active {
+  opacity: 0.8;
+}
+
+/* Light theme splash adjustments */
+body.theme-light .splash__disclaimer {
+  background: color-mix(in srgb, #ef4444 8%, var(--panel));
+}
+
+
+/* ============================================================================
+   Tab disclaimer reminder
+   ============================================================================ */
+
+.tab-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 20px 0 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tab-disclaimer__icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  margin-top: 1px;
+}

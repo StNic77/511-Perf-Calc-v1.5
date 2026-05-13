@@ -3485,10 +3485,31 @@ function init() {
   showTab(STORE.currentTab);
 }
 
+// ---- Splash screen ---------------------------------------------------------
+function initSplash() {
+  const splash = document.getElementById("splashScreen");
+  const btn    = document.getElementById("splashAcceptBtn");
+  const ver    = document.getElementById("splashVersion");
+  if (!splash) return;
+
+  // Populate version from config
+  if (ver && typeof AC !== "undefined" && AC.version) {
+    ver.textContent = "v" + AC.version;
+  }
+
+  // Dismiss on button click
+  btn.addEventListener("click", function () {
+    splash.style.opacity = "0";
+    splash.style.transition = "opacity 0.3s";
+    setTimeout(function () { splash.remove(); }, 300);
+  });
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", function () { init(); initSplash(); });
 } else {
   init();
+  initSplash();
 }
 
 // Live-update the reading age display every 30 seconds

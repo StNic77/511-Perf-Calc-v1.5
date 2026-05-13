@@ -9,6 +9,48 @@
 </head>
 <body>
 
+  <!-- ===== Splash / Disclaimer ======================================= -->
+  <div id="splashScreen" class="splash" role="dialog" aria-modal="true" aria-label="Disclaimer">
+    <div class="splash__inner">
+
+      <div class="splash__photo-wrap">
+        <img class="splash__photo" src="images/SPLASH_PG_SSN.png" alt="Shawn St Nicolaas" draggable="false">
+      </div>
+
+      <div class="splash__title-block">
+        <div class="splash__aircraft">CH-149-511</div>
+        <div class="splash__appname">Performance Calculator</div>
+        <div class="splash__credit">Built by Shawn St Nicolaas</div>
+        <div class="splash__version" id="splashVersion"></div>
+      </div>
+
+      <div class="splash__disclaimer">
+        <div class="splash__disclaimer-header">&#9888;&#65039; DISCLAIMER &mdash; READ BEFORE USE</div>
+        <p>
+          This application is a <strong>digital aid only</strong>. It interpolates from
+          digitised FM charts and small errors can accumulate &mdash; particularly at close
+          performance margins. Computed values may differ from a careful hand-trace of
+          the paper Flight Manual.
+        </p>
+        <p>
+          <strong>At tight margins, always verify with a hand trace of the applicable
+          FM figure.</strong> This tool does not replace the Flight Manual, crew
+          judgement, or authorised performance documentation.
+        </p>
+        <p>
+          Use of this application is at the operator's own risk. The developer accepts
+          no liability for decisions made on the basis of its output.
+        </p>
+      </div>
+
+      <button class="splash__accept btn" id="splashAcceptBtn" type="button">
+        I Understand &mdash; Enter Application
+      </button>
+
+    </div>
+  </div>
+
+
   <!-- ===== Header ============================================== -->
   <header class="app-header">
     <div class="app-header__title">
@@ -136,6 +178,11 @@
         <button class="btn" id="pretooffCopyBtn" type="button">Copy Brief to Clipboard</button>
       </div>
 
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised FM charts. At close margins, verify with a hand trace of the applicable FM figure.
+      </div>
+
     </section>
 
     <!-- ===== Power Assurance panel ============================== -->
@@ -225,6 +272,11 @@
         </div>
         <div class="card__body" id="paChartsBody">
         </div>
+      </div>
+
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised FM charts. At close margins, verify with a hand trace of the applicable FM figure.
       </div>
 
     </section>
@@ -322,6 +374,11 @@
         </div>
       </div>
 
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised FM charts. At close margins, verify with a hand trace of the applicable FM figure.
+      </div>
+
     </section>
 
 
@@ -401,6 +458,11 @@
 
       <div style="padding: 16px 0 8px;">
         <button class="btn btn--danger" id="fuelResetBtn" type="button">Reset Session</button>
+      </div>
+
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised FM charts. At close margins, verify with a hand trace of the applicable FM figure.
       </div>
 
     </section>
@@ -508,6 +570,11 @@
           <h2 class="card__title">Reference Chart</h2>
         </div>
         <div class="card__body" id="hovChartsBody"></div>
+      </div>
+
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised FM charts. At close margins, verify with a hand trace of the applicable FM figure.
       </div>
 
     </section>
