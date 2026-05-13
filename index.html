@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <title>CH-149-511 Performance Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== Header ============================================== -->
+  <header class="app-header">
+    <div class="app-header__title">
+      <span class="app-header__variant">CH-149-511</span>
+      <span class="app-header__app">Performance Calculator</span>
+    </div>
+    <div class="app-header__pills">
+      <span class="pill pill--info" id="antiIceChip">AI OFF</span>
+      <button id="themeToggle" class="btn btn--ghost" title="Toggle theme" aria-label="Toggle theme">
+        <span id="themeToggleIcon">☾</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Tab strip -->
+    <nav class="tabs" role="tablist" aria-label="App sections">
+      <button class="tab tab--active"  role="tab" aria-selected="true"  data-tab="pretooff">Pre-Take Off</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="pa">Power Assurance</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="sarcb">SAR Check Performance Brief</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="fuel">Fuel Burn</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="hover">Hover Performance</button>
+    </nav>
+
+    <!-- ===== Pre-Take Off panel ================================= -->
+    <section class="tab-panel" id="pretooffPanel" role="tabpanel" aria-label="Pre-Take Off Brief">
+
+      <!-- PA Calculator from elevation + QNH -->
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">PA Calculator <span class="card__title-sub">optional</span></h2>
+        </div>
+        <div class="card__body">
+          <p class="hint">Enter airfield elevation and altimeter setting to compute Pressure Altitude.</p>
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="pretooffElevInput">Airfield Elevation</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="pretooffElevInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="10" id="pretooffElevInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="pretooffQnhInput">Altimeter (QNH)</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="decimal" step="0.01" id="pretooffQnhInput" placeholder="—">
+                <span class="field__unit" id="pretooffQnhUnit">inHg</span>
+              </div>
+            </div>
+          </div>
+          <div class="seg-row">
+            <span class="field__label">QNH Units</span>
+            <div class="seg" role="radiogroup" aria-label="QNH units">
+              <button class="seg__btn"                  data-pretooff-qnh="hpa" type="button">mbar</button>
+              <button class="seg__btn seg__btn--active" data-pretooff-qnh="inhg" type="button">inHg</button>
+            </div>
+          </div>
+          <div id="pretooffPaCalcResult" class="pa-calc-result" hidden></div>
+        </div>
+      </div>
+
+      <!-- Aircraft Conditions -->
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Aircraft Conditions</h2>
+        </div>
+        <div class="card__body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="pretooffAuwInput">AUW <span class="field__label-sub">for brief</span></label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="pretooffAuwInput" placeholder="—">
+                <span class="field__unit">kg</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="pretooffPaInput">PA</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="pretooffPaInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="pretooffPaInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="pretooffOatInput">OAT</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="pretooffOatInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" id="pretooffOatInput" placeholder="—">
+                <span class="field__unit">°C</span>
+              </div>
+            </div>
+          </div>
+          <div class="seg-row">
+            <span class="field__label">Engine Anti-Ice</span>
+            <div class="seg" role="radiogroup" aria-label="Engine Anti-Ice state">
+              <button class="seg__btn seg__btn--active" data-pretooff-ai="OFF" type="button" role="radio" aria-checked="true">AI OFF</button>
+              <button class="seg__btn"                  data-pretooff-ai="ON"  type="button" role="radio" aria-checked="false">AI ON</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Power Available Result -->
+      <div class="card card--locked" id="pretooffBriefCard">
+        <div class="card__header">
+          <h2 class="card__title">Power Available</h2>
+        </div>
+        <div class="card__body">
+          <div id="pretooffBriefOutput" class="muted">Enter PA and OAT above to calculate.</div>
+        </div>
+      </div>
+
+      <!-- Annex B Reference Chart -->
+      <div class="card" id="pretooffChartsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Reference Chart</h2>
+        </div>
+        <div class="card__body" id="pretooffChartsBody"></div>
+      </div>
+
+      <!-- Copy brief button - outside cards so it's always accessible -->
+      <div id="pretooffCopyWrap" hidden>
+        <button class="btn" id="pretooffCopyBtn" type="button">Copy Brief to Clipboard</button>
+      </div>
+
+    </section>
+
+    <!-- ===== Power Assurance panel ============================== -->
+    <section class="tab-panel" id="paPanel" role="tabpanel" aria-label="Power Assurance" hidden>
+
+      <!-- Step 1: In Flight / On Ground -->
+      <div class="card card--step">
+        <div class="card__header">
+          <span class="step-num">1</span>
+          <h2 class="card__title">Test Type</h2>
+        </div>
+        <div class="card__body">
+          <div class="seg" role="radiogroup" aria-label="Test type" id="modeSegGroup">
+            <button class="seg__btn seg__btn--active" data-mode="inFlight"  type="button" role="radio" aria-checked="true">In Flight</button>
+            <button class="seg__btn"                  data-mode="onGround"  type="button" role="radio" aria-checked="false">On Ground</button>
+          </div>
+          <p class="muted hint" id="modeHint"></p>
+        </div>
+      </div>
+
+      <!-- Step 2: Required Conditions -->
+      <div class="card card--step" id="precheckCard">
+        <div class="card__header">
+          <span class="step-num">2</span>
+          <h2 class="card__title">Required Conditions</h2>
+        </div>
+        <div class="card__body">
+          <ul class="reqlist" id="precheckList"></ul>
+        </div>
+      </div>
+
+      <!-- Step 3: Shared Conditions -->
+      <div class="card card--step" id="conditionsCard">
+        <div class="card__header">
+          <span class="step-num">3</span>
+          <h2 class="card__title">Conditions</h2>
+        </div>
+        <div class="card__body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="oatInput">OAT</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="oatInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" id="oatInput" placeholder="—">
+                <span class="field__unit">°C</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="paInput">PA</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="paInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="paInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+          </div>
+          <p class="muted" id="conditionsHint">Shared across all three engines.</p>
+        </div>
+      </div>
+
+      <!-- Step 4: Engine Readings -->
+      <div class="card card--step card--locked" id="enginesCard">
+        <div class="card__header">
+          <span class="step-num">4</span>
+          <h2 class="card__title">Engine Readings</h2>
+        </div>
+        <div class="card__body">
+          <div class="engines"></div>
+        </div>
+      </div>
+
+      <!-- Step 5: Result -->
+      <div class="card card--step card--locked" id="summaryCard">
+        <div class="card__header">
+          <span class="step-num">5</span>
+          <h2 class="card__title">Result</h2>
+        </div>
+        <div class="card__body" id="summaryBody">
+          <p class="muted">Complete the steps above to see results.</p>
+        </div>
+      </div>
+
+      <!-- Reference Charts (shown once engine readings are entered) -->
+      <div class="card" id="paChartsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Reference Charts</h2>
+        </div>
+        <div class="card__body" id="paChartsBody">
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===== SAR Check Performance Brief panel ================== -->
+    <section class="tab-panel" id="sarcbPanel" role="tabpanel" aria-label="SAR Check Performance Brief" hidden>
+
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Conditions</h2>
+        </div>
+        <div class="card__body">
+          <div class="seg-row">
+            <span class="field__label">Engine Anti-Ice</span>
+            <div class="seg" role="radiogroup" aria-label="Engine Anti-Ice state">
+              <button class="seg__btn seg__btn--active" data-sarcb-ai="OFF" type="button" role="radio" aria-checked="true">AI OFF</button>
+              <button class="seg__btn"                  data-sarcb-ai="ON"  type="button" role="radio" aria-checked="false">AI ON</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="sarcbAuwInput">AUW</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="sarcbAuwInput" placeholder="—">
+                <span class="field__unit">kg</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="sarcbPaInput">PA</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="sarcbPaInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="sarcbPaInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="sarcbOatInput">OAT</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="sarcbOatInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" id="sarcbOatInput" placeholder="—">
+                <span class="field__unit">°C</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="sarcbWindInput">Headwind</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" min="0" id="sarcbWindInput" placeholder="—">
+                <span class="field__unit">kt</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:flex-end; margin-top:4px;">
+            <div class="field" style="flex:1; min-width:0;">
+              <label class="field__label" for="sarcbHogeInput">HOGE</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="decimal" step="0.1" id="sarcbHogeInput" placeholder="from aircraft computer">
+                <span class="field__unit">%Q</span>
+              </div>
+              <span id="sarcbHogeSourceLabel" class="muted" style="font-size: 11px; margin-top: 4px; display: block;"></span>
+            </div>
+            <div style="flex-shrink:0; padding-bottom:2px;">
+              <button class="seg__btn" type="button" id="sarcbHogeCalcBtn">Calculate from chart</button>
+            </div>
+          </div>
+          <p class="muted hint">Enter HOGE from the aircraft computer, or use Calculate to derive it from the FM chart. DA is computed from PA + OAT (ICAO ISA).</p>
+        </div>
+      </div>
+
+      <div class="card" id="sarcbHogeCard">
+        <div class="card__header">
+          <h2 class="card__title">Working Sheet</h2>
+        </div>
+        <div class="card__body" id="sarcbHogeBody">
+          <p class="muted">Enter all conditions above to calculate.</p>
+        </div>
+      </div>
+
+      <div class="card" id="sarcbBriefCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Brief to Pilots</h2>
+        </div>
+        <div class="card__body" id="sarcbBriefBody">
+        </div>
+      </div>
+
+      <div class="card" id="sarcbChartsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Reference Charts</h2>
+        </div>
+        <div class="card__body" id="sarcbChartsBody">
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ── Fuel Tab ─────────────────────────────────────────────────────── -->
+    <section class="tab-panel" id="fuelPanel" role="tabpanel" aria-label="Fuel Management" hidden>
+
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Session Setup</h2>
+        </div>
+        <div class="card__body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="fuelBingoInput">Reserve Fuel</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="10" id="fuelBingoInput" placeholder="250">
+                <span class="field__unit">kg</span>
+              </div>
+              <span class="field__hint">Default 250 kg. Edit for IFR.</span>
+            </div>
+            <div class="field">
+              <label class="field__label" for="fuelPlanRateInput">Plan Burn Rate</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="10" id="fuelPlanRateInput" placeholder="800">
+                <span class="field__unit">kg/hr</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Fuel Log</h2>
+        </div>
+        <div class="card__body">
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" id="fuelCurrentLabel" for="fuelCurrentInput">Current Fuel</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="10" id="fuelCurrentInput" placeholder="—">
+                <span class="field__unit">kg</span>
+              </div>
+            </div>
+            <div class="field field--btn-align">
+              <button class="btn" id="fuelLogBtn" type="button">Log Reading</button>
+            </div>
+          </div>
+          <div id="fuelLogBody"></div>
+        </div>
+      </div>
+
+      <div class="card" id="fuelStateCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Fuel State</h2>
+        </div>
+        <div class="card__body" id="fuelStateBody"></div>
+      </div>
+
+      <div class="card" id="fuelLegsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Route Legs</h2>
+        </div>
+        <div class="card__body">
+          <p class="hint">Add up to 3 legs. Each leg shows fuel required and go/no-go above reserve.</p>
+          <div id="fuelLegsBody"></div>
+          <button class="btn btn--secondary" id="fuelAddLegBtn" type="button">+ Add Leg</button>
+        </div>
+      </div>
+
+      <div class="card" id="fuelRouteSummaryCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Route Summary</h2>
+        </div>
+        <div class="card__body" id="fuelRouteSummaryBody"></div>
+      </div>
+
+      <div style="padding: 16px 0 8px;">
+        <button class="btn btn--danger" id="fuelResetBtn" type="button">Reset Session</button>
+      </div>
+
+    </section>
+
+
+    <!-- ===== Hover Performance panel ============================ -->
+    <section class="tab-panel" id="hoverPanel" role="tabpanel" aria-label="Hover Performance" hidden>
+
+      <!-- Conditions -->
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Conditions</h2>
+        </div>
+        <div class="card__body">
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="hovAuwInput">AUW</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="hovAuwInput" placeholder="—">
+                <span class="field__unit">kg</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="hovPaInput">PA</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="hovPaInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="hovPaInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="hovOatInput">OAT</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="hovOatInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" id="hovOatInput" placeholder="—">
+                <span class="field__unit">°C</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="hovWindInput">Headwind</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" min="0" id="hovWindInput" placeholder="0">
+                <span class="field__unit">kt</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="hovTmInput">TM Reserve <span class="field__label-sub">optional</span></label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" min="0" max="10" id="hovTmInput" placeholder="0">
+                <span class="field__unit">%</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="muted hint">TM Reserve holds back thrust margin for mountain or turbulent operations. Leave blank or 0 for standard planning.</p>
+
+          <div class="seg-row">
+            <span class="field__label">Engine Anti-Ice</span>
+            <div class="seg" role="radiogroup" aria-label="Engine Anti-Ice state">
+              <button class="seg__btn seg__btn--active" data-hov-ai="OFF" type="button" role="radio" aria-checked="true">AI OFF</button>
+              <button class="seg__btn"                  data-hov-ai="ON"  type="button" role="radio" aria-checked="false">AI ON</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Working Sheet -->
+      <div class="card card--locked" id="hovWorkingCard">
+        <div class="card__header">
+          <h2 class="card__title">Working Sheet</h2>
+        </div>
+        <div class="card__body" id="hovWorkingBody">
+          <p class="muted">Enter PA and OAT above to calculate.</p>
+        </div>
+      </div>
+
+      <!-- Results (side by side) -->
+      <div class="hov-results-row">
+        <div class="card card--locked" id="hovResultCard">
+          <div class="card__header">
+            <h2 class="card__title">Max Continuous</h2>
+          </div>
+          <div class="card__body" id="hovResultBody">
+            <p class="muted">Enter conditions above to calculate.</p>
+          </div>
+        </div>
+        <div class="card card--locked" id="hovResultCard30Min">
+          <div class="card__header">
+            <h2 class="card__title">30 Min Intermediate</h2>
+          </div>
+          <div class="card__body" id="hovResultBody30Min">
+            <p class="muted">Enter conditions above to calculate.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference Chart -->
+      <div class="card" id="hovChartsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Reference Chart</h2>
+        </div>
+        <div class="card__body" id="hovChartsBody"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span class="muted">v1.3 — Pre-Take Off Brief · Power Assurance · SAR Check Performance Brief · Fuel Burn · Hover Performance.</span>
+  </footer>
+
+  <script>
+    // Detect touch capability once and set class for CSS .chart-ref__hint visibility.
+    if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) {
+      document.body.classList.add("is-touch");
+    }
+  </script>
+  <script src="config.js"></script>
+  <script src="compute.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1476 @@
+/* ============================================================================
+   CH-149-511 Performance Calculator — Stylesheet
+   Per APP_FAMILY_SYNOPSIS §4. Dark theme default; light theme overrides
+   the same variables. All component colours go through variables so theme
+   switching is automatic.
+   ============================================================================ */
+
+
+/* ---- Tokens (dark theme default) ---------------------------------------- */
+:root {
+  --bg:      #0b1220;
+  --panel:   #111a2e;
+  --panel2:  #0f1730;
+  --text:    #e8eefc;
+  --muted:   #aab6d6;
+  --good:    #35d07f;
+  --warn:    #ffbf3c;
+  --bad:     #ff5a73;
+  --accent:  #62a8ff;
+  --line:    #243154;
+  --chip:    #1a2750;
+  --btn:     #1d2b57;
+  --btn2:    #243765;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --radius:    10px;
+  --radius-sm: 6px;
+  --shadow:    0 1px 2px rgba(0,0,0,.25), 0 4px 16px rgba(0,0,0,.25);
+  --tap:       44px;
+}
+
+body.theme-light {
+  --bg:      #f4f6fb;
+  --panel:   #ffffff;
+  --panel2:  #eef1f8;
+  --text:    #101726;
+  --muted:   #556079;
+  --good:    #15803d;
+  --warn:    #b45309;
+  --bad:     #b91c1c;
+  --accent:  #2563eb;
+  --line:    #d6dcea;
+  --chip:    #e6ebf5;
+  --btn:     #e6ebf5;
+  --btn2:    #d6dcea;
+
+  --shadow:  0 1px 2px rgba(15,23,42,.08), 0 6px 18px rgba(15,23,42,.06);
+}
+
+
+/* ---- Reset & base -------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+/* Prevent the entire page scrolling sideways on mobile — any overflow should
+   be clipped at the viewport edge. Individual components that need horizontal
+   scroll (tab strip, brief-code) have their own overflow-x: auto. */
+html { overflow-x: hidden; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--muted); }
+
+/* Hint paragraph (e.g. mode hint under segmented control). The on-ground
+   variant contains a small list of auto-applied corrections. */
+.hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.hint[hidden] { display: none; }
+.hint__lead {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.hint-list {
+  margin: 4px 0 0;
+  padding: 0 0 0 18px;
+  list-style: disc;
+  font-size: 12px;
+  color: var(--muted);
+}
+.hint-list li { margin-top: 2px; }
+
+
+/* ---- Header -------------------------------------------------------------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.app-header__title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-header__variant {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.app-header__app {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.app-header__pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* ---- Tabs ---------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  background: var(--chip);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tab:hover:not(:disabled) {
+  background: var(--btn2);
+  color: var(--text);
+}
+
+.tab--active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+body.theme-light .tab--active { color: #ffffff; }
+
+.tab--disabled,
+.tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
+/* ---- Main / panels ------------------------------------------------------- */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* The HTML `hidden` attribute must override `display: flex` above. Browsers'
+   default [hidden] { display: none } rule has the same specificity as the
+   .tab-panel class rule, so the class rule wins (it comes later). This rule
+   re-asserts hidden with matching specificity to fix that. Without it,
+   showTab() sets the attribute correctly but every panel still renders. */
+.tab-panel[hidden] { display: none; }
+
+
+/* ---- Card ---------------------------------------------------------------- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: opacity 200ms ease;
+}
+
+.card--locked {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel2);
+}
+
+.card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.card__body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+
+/* ---- Pills, badges, chips ----------------------------------------------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.pill--info    { background: var(--chip); }
+.pill--good    { background: color-mix(in srgb, var(--good) 18%, var(--panel)); color: var(--good); border-color: var(--good); }
+.pill--danger  { background: color-mix(in srgb, #ef4444 15%, var(--panel)); color: #ef4444; border-color: #ef4444; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.badge--good { background: rgba(53, 208, 127, 0.15); color: var(--good); }
+.badge--warn { background: rgba(255, 191, 60, 0.15); color: var(--warn); }
+.badge--bad  { background: rgba(255, 90, 115, 0.15); color: var(--bad);  }
+
+
+/* ---- Buttons ------------------------------------------------------------- */
+.btn {
+  min-height: var(--tap);
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--btn);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.btn:hover { background: var(--btn2); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--line);
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  font-size: 16px;
+}
+.btn--ghost:hover { background: var(--btn); }
+
+
+/* ---- Segmented control --------------------------------------------------- */
+.seg {
+  display: inline-flex;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg__btn {
+  min-height: 36px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.seg__btn--active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.seg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.seg-row .field__label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+
+/* ---- Required-conditions reminder list ---------------------------------- */
+/* Plain, non-interactive bullet list. Not a checklist — these are reminders
+   the FE reads, not items to confirm. */
+.reqlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reqlist__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 2px 4px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.reqlist__bullet {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.reqlist__label {
+  flex: 1;
+}
+
+
+/* ---- Form fields --------------------------------------------------------- */
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.field__input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color 120ms ease;
+  height: var(--tap);
+}
+.field__input-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.field__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 16px;            /* ≥16px to prevent iOS zoom */
+  font-weight: 500;
+}
+
+.field__input::placeholder { color: var(--muted); }
+
+/* Hide spinner controls; entries are typed */
+.field__input::-webkit-outer-spin-button,
+.field__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.field__input[type="number"] { -moz-appearance: textfield; }
+
+.field__unit {
+  padding: 0 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border-left: 1px solid var(--line);
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+/* ---- Engine row --------------------------------------------------------- */
+.engines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.engine {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.engine__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.engine__title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.engine__inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.engine__chartTit {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.engine__chartTit-label { color: var(--muted); }
+.engine__chartTit-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text);
+  margin-left: auto;
+}
+.engine__chartTit-note {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted);
+  flex-basis: 100%;
+  text-align: right;
+  margin-top: 2px;
+}
+.engine__chartTit-note[hidden] { display: none; }
+
+.engine__result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.engine__result--pass {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 8%, var(--panel));
+}
+.engine__result--fail {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, var(--panel));
+}
+.engine__result--error {
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, var(--panel));
+}
+
+.engine__result-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.engine__result-margin {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.engine__result-detail {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+
+/* ---- Summary banner ----------------------------------------------------- */
+.summary-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 15px;
+}
+.summary-banner--good {
+  background: color-mix(in srgb, var(--good) 12%, var(--panel));
+  border: 1px solid var(--good);
+  color: var(--good);
+}
+.summary-banner--bad {
+  background: color-mix(in srgb, var(--bad) 14%, var(--panel));
+  border: 1px solid var(--bad);
+  color: var(--bad);
+}
+.summary-banner--warn {
+  background: color-mix(in srgb, var(--warn) 14%, var(--panel));
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}
+
+.summary-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--panel2);
+}
+.summary-row__label { color: var(--muted); }
+.summary-row__value { color: var(--text); font-weight: 600; }
+.summary-row--pass .summary-row__value { color: var(--good); }
+.summary-row--fail .summary-row__value { color: var(--bad); }
+
+
+/* ---- Pre-Take Off Brief Output ------------------------------------------ */
+.brief-output {
+  padding: 12px;
+  background: var(--panel2);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+.brief-code {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+
+
+
+/* ---- Chart reference viewer --------------------------------------------- */
+/*
+ * Two-layer system:
+ *   1. Collapsible <details> rows in the Reference Charts card, each showing
+ *      a thumbnail preview. Thumbnail tap opens the fullscreen overlay.
+ *   2. A single shared fullscreen overlay (#chartViewerOverlay) that displays
+ *      the chart at full resolution with native pinch-zoom.
+ *
+ * This gives a clean collapsed list on first glance, a readable overview on
+ * expand, and a properly zoomable chart when the FE needs fine detail.
+ */
+
+/* --- Collapsible rows --- */
+
+.chart-refs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+details.chart-ref {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel2);
+  overflow: hidden;
+}
+
+details.chart-ref[open] {
+  border-color: var(--accent);
+}
+
+details.chart-ref > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  min-height: var(--tap);   /* 44px tap target */
+  outline: none;
+}
+
+details.chart-ref > summary::-webkit-details-marker { display: none; }
+
+details.chart-ref > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.chart-ref__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chart-ref__label > span:first-child {
+  /* chart title — truncate on very narrow screens */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-ref__fig {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.chart-ref__chevron {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+
+details.chart-ref[open] .chart-ref__chevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* --- Thumbnail body --- */
+
+.chart-ref__body {
+  padding: 0 14px 14px;
+}
+
+/* Thumbnail: intentionally small — just enough to see the chart structure.
+   Tapping opens the fullscreen viewer for proper reading. */
+.chart-ref__thumb {
+  display: block;
+  width: 100%;
+  max-height: 260px;        /* about 5–6 cm on a phone — readable overview */
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: zoom-in;
+}
+
+.chart-ref__tap-hint {
+  display: none;             /* shown only on touch devices */
+  margin-top: 6px;
+  text-align: center;
+}
+
+.chart-ref__tap-hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Show tap hint on touch devices */
+body.is-touch .chart-ref__tap-hint { display: block; }
+
+.chart-ref__caption {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+}
+
+
+/* --- Fullscreen overlay viewer --- */
+
+.chart-viewer {
+  /* Hidden by default; shown via .chart-viewer--open */
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.92);
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.chart-viewer--open {
+  display: flex;
+}
+
+/* Prevent body scroll while viewer is open */
+body.chart-viewer-open {
+  overflow: hidden;
+  /* On iOS, fixed overlays need touch-action handled on the overlay itself */
+}
+
+.chart-viewer__close {
+  position: absolute;
+  top: env(safe-area-inset-top, 0px);
+  right: 0;
+  z-index: 10;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-bottom-left-radius: var(--radius);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chart-viewer__close:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Scrollable inner area — allows image to overflow for pinch-pan */
+.chart-viewer__inner {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* top padding clears the close button; bottom clears caption */
+  padding: 52px 0 48px;
+}
+
+/* The image starts letterboxed to the viewport.
+   On touch: user can pinch-zoom, which makes it overflow the inner scroll
+   container — then they can pan. On desktop: mouse-wheel zooms via browser. */
+.chart-viewer__img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  touch-action: pinch-zoom;
+  /* White background for scanned AFM pages */
+  background: #fff;
+  /* Slight inset so image doesn't sit flush on the dark backdrop */
+  margin: 0 8px;
+}
+
+.chart-viewer__trace-btn {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chart-viewer__trace-btn.btn--active {
+  background: rgba(255, 204, 0, 0.25);
+  border-color: #ffcc00;
+  color: #ffcc00;
+}
+.chart-viewer__trace-btn:active {
+  background: rgba(255,255,255,0.15);
+}
+
+.chart-viewer__img-wrap {
+  display: inline-block;
+  line-height: 0;
+}
+
+.chart-viewer__caption {
+  position: absolute;
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  text-align: center;
+  font-style: italic;
+}
+
+
+/* ---- Card title sub-label ----------------------------------------------- */
+.card__title-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field__label-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+
+/* ---- PA Calculator result ----------------------------------------------- */
+.pa-calc-result { margin-top: 4px; }
+
+.pa-calc-output {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  flex-wrap: wrap;
+}
+
+.pa-calc-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.pa-calc-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  flex: 1;
+}
+
+.pa-calc-use {
+  flex-shrink: 0;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+
+/* ---- Power Available result display ------------------------------------- */
+/*
+ * Large, prominent display for the Pre-Takeoff tab.
+ * The OEI/AEO values are the headline number; AI ON is shown below for
+ * comparison. Not a brief — just the calculated numbers.
+ */
+.pwr-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.pwr-result__auw {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.pwr-result__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pwr-result__row--main {
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--line);
+}
+
+.pwr-result__row--aion {
+  padding: 8px 0 4px;
+  border-top: 1px dashed var(--line);
+  opacity: 0.8;
+}
+
+.pwr-result__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pwr-result__value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.pwr-result__value--aion {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.pwr-result__value--muted {
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.pwr-result__note {
+  margin-top: 4px;
+  padding: 8px 0 4px;
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.pwr-result__sublabel {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  letter-spacing: 0.04em;
+  margin-top: -2px;
+}
+
+
+/* ---- Brief to Pilots (SAR Check) ---------------------------------------- */
+/*
+ * Prominent, card-like brief block shown at the bottom of the SAR Check
+ * working sheet once all values are computed. Designed to be the primary
+ * thing the FE reads before briefing the crew.
+ */
+.pilot-brief {
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.pilot-brief__label {
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+}
+
+.pilot-brief__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.pilot-brief__auw {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  justify-content: flex-start;
+  padding-top: 14px;
+  padding-bottom: 4px;
+}
+
+.pilot-brief__key {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.pilot-brief__val {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+  line-height: 1.1;
+}
+
+/* The SAFE/NOT SAFE verdict row — largest, most prominent element */
+.pilot-brief__verdict {
+  font-size: 26px;
+  font-weight: 800;
+  justify-content: center;
+  text-align: center;
+  padding: 18px 14px;
+  letter-spacing: 0.02em;
+}
+
+.pilot-brief__safe    { color: var(--good); background: rgba(53, 208, 127, 0.08); }
+.pilot-brief__notsafe { color: var(--bad);  background: rgba(255, 90, 115, 0.08); }
+
+.pilot-brief__actions {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--panel2);
+}
+
+
+/* ---- Footer ------------------------------------------------------------- */
+.app-footer {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+
+
+/* ---- Responsive --------------------------------------------------------- */
+
+/* iPhone SE / small Android — anything narrower than 400px */
+@media (max-width: 400px) {
+
+  /* Slightly tighter card padding */
+  .card__body { padding: 12px; }
+  .card__header { padding: 12px 12px 0; }
+
+  /* Tighter panel side padding — recovers ~8px each side */
+  .tab-panel { padding: 8px 10px; }
+
+  /* Tab strip: smaller text so all tabs fit without tiny horizontal scroll */
+  .tab { font-size: 12px; padding: 0 10px; }
+
+  /* Field rows already use auto-fit minmax — tighten the minimum */
+  .field-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Seg-row: stack label above the control on very narrow screens */
+  .seg-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* Engine inputs already 1-col at ≤480px — keep that */
+}
+
+/* iPhone portrait (375–430px) and anything up to small tablet */
+@media (max-width: 480px) {
+
+  .engine__inputs { grid-template-columns: 1fr; }
+
+  /* Single column on phone — two equal columns are too narrow for inputs */
+  .field-row { grid-template-columns: 1fr; gap: 8px; }
+
+  .app-header__app { font-size: 14px; }
+
+  /* Working sheet rows: stack label above value so long strings wrap cleanly.
+     The label sits muted on top; the value wraps below at full width.
+     This is the main fix for portrait iPhone — values like
+     "— (Headwind 0kt outside chart envelope at x_ref=74.)" no longer overflow. */
+  .summary-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 8px 10px;
+  }
+
+  .summary-row__value {
+    /* Allow wrapping; mono font at 12px stays readable at this size */
+    white-space: normal;
+    word-break: break-word;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .summary-row__label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Summary table: tighten gap slightly */
+  .summary-table { font-size: 12px; gap: 3px; }
+
+  /* Brief code: smaller so it fits without scrolling on most cases */
+  .brief-code { font-size: 12px; }
+
+  /* Chart ref summary row: allow title to wrap rather than truncate */
+  .chart-ref__label > span:first-child {
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  /* Thumbnail: slightly shorter on small screens */
+  .chart-ref__thumb { max-height: 200px; }
+
+  /* Pilot brief: reduce large values so they don't wrap on narrow screens */
+  .pilot-brief__val     { font-size: 20px; }
+  .pilot-brief__auw     { font-size: 20px; }
+  .pilot-brief__verdict { font-size: 20px; padding: 14px; }
+}
+
+/* ---- Sign toggle (±) ---------------------------------------------------- */
+
+.sign-toggle {
+  flex-shrink: 0;
+  width: 36px;
+  min-height: var(--tap, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel2);
+  border: none;
+  border-right: 1px solid var(--line);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.sign-toggle:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.field__input-wrap .sign-toggle + .field__input {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* ── Fuel Tab ────────────────────────────────────────────────────────────── */
+
+.fuel-log-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.fuel-log-header,
+.fuel-log-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 1fr 72px;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.fuel-log-header {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 6px;
+}
+
+.fuel-log-row {
+  border-radius: 4px;
+}
+
+.fuel-log-row--editing {
+  background: var(--color-surface-raised);
+}
+
+.fuel-reading-time { color: var(--color-text-muted); font-size: 12px; }
+.fuel-reading-kg   { font-variant-numeric: tabular-nums; font-weight: 500; }
+.fuel-reading-rate { color: var(--color-text-muted); font-size: 12px; }
+.fuel-log-edited-note { color: var(--color-text-muted); font-size: 11px; }
+.fuel-note         { color: var(--color-text-muted); font-size: 12px; margin-left: 4px; }
+
+.field__input-wrap--editing {
+  outline: 2px solid var(--color-warn, #f59e0b);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+.fuel-log-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.fuel-log-edit-btn--active { color: var(--color-warn, #f59e0b); font-weight: 600; }
+
+.fuel-anomaly {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--color-warn-bg, #fffbe6);
+  border-left: 3px solid var(--color-warn, #f59e0b);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-warn-text, #92400e);
+}
+
+.fuel-bad  { color: var(--color-fail, #dc2626) !important; font-weight: 600; }
+.fuel-warn { color: var(--color-warn-text, #92400e) !important; }
+
+.fuel-leg {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.fuel-leg__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fuel-leg__num    { font-weight: 600; font-size: 13px; }
+.fuel-leg__remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.fuel-leg-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.fuel-leg-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+.fuel-leg-badge--go   { background: var(--color-pass-bg, #d1fae5); color: var(--color-pass, #065f46); }
+.fuel-leg-badge--nogo { background: var(--color-fail-bg, #fee2e2); color: var(--color-fail, #dc2626); }
+
+.field--btn-align { justify-content: flex-end; padding-top: 20px; }
+
+.btn--danger {
+  background: var(--color-fail-bg, #fee2e2);
+  color: var(--color-fail, #dc2626);
+  border: 1px solid var(--color-fail, #dc2626);
+}
+.btn--danger:hover { background: var(--color-fail, #dc2626); color: #fff; }
+/* ---- Annex B Chart Trace Overlay ---------------------------------------- */
+/* Container keeps canvas pixel-perfect over the image */
+#pretooffChartsBody > div {
+  border-radius: 6px;
+  overflow: hidden;
+}
+/* ---- Chart Trace — toolbar, toggle button, summary row ------------------- */
+.chart-ref__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 0 4px;
+}
+.trace-toggle {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent, #4a9eff);
+  color: var(--accent, #4a9eff);
+  background: transparent;
+  cursor: pointer;
+}
+.trace-toggle.btn--active {
+  background: var(--accent, #4a9eff);
+  color: #fff;
+}
+.btn--sm {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+/* Trace summary numbers */
+.trace-summary {
+  margin: 8px 0 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+}
+.trace-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.trace-summary__row:last-child { border-bottom: none; }
+.trace-summary__row--result    { background: rgba(255,68,68,0.10); }
+.trace-summary__row--note       { background: rgba(255,204,0,0.10); font-style: italic; }
+.trace-summary__label {
+  color: var(--text-muted, #8899aa);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.trace-summary__value {
+  font-family: monospace;
+  color: var(--text, #e0e8f0);
+}
+.trace-summary__value--result {
+  color: #ff6666;
+  font-size: 17px;
+  font-weight: bold;
+}
+.chart-ref__thumb-wrap {
+  width: 100%;
+}
+/* Hover tab - side-by-side result panes */
+.hov-results-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+@media (max-width: 640px) {
+  .hov-results-row {
+    grid-template-columns: 1fr;
+  }
+}
