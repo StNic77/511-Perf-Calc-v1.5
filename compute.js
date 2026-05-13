@@ -1053,35 +1053,32 @@ if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
 // ---- Annex B — Power Assurance %Q Reference --------------------------------
 // Single-panel: OAT + PA → reference %Q.
 // Higher PA or hotter OAT = less dense air = less %Q delivered.
+// getAnnexBRefQ reads from AC.perf.powerAvailable.aiOff -- the same dataset
+// used by getPowerAvailable(). Single source of truth: correct PWR_AVAIL_OEI_AI_OFF
+// and both the tab display and the trace update automatically.
 function getAnnexBRefQ({ pa, oat }) {
-  const data = AC.perf.annexB && AC.perf.annexB.pa;
-  if (!data) return { ok: false, reason: "chart_not_digitized" };
-  const axis = data.paAxis;
+  const chart = AC.perf.powerAvailable.aiOff;
+  if (!chart) return { ok: false, reason: "chart_not_digitized" };
+  const axis = chart.paAxis;
   if (pa > axis[axis.length - 1] || pa < axis[0])
     return { ok: false, reason: "pa_outside_chart", pa };
   const [iLo, iHi] = bracket(axis, pa);
   const paLo = axis[iLo], paHi = axis[iHi];
-  const cLo  = data.curves[String(paLo)];
-  const cHi  = data.curves[String(paHi)];
-  function interpAtOAT(curve, o) {
-    if (o <= curve[0].oat)              return { q: curve[0].q,              clamped: true  };
-    if (o >= curve[curve.length-1].oat) return { q: curve[curve.length-1].q, clamped: true  };
-    for (let i = 0; i < curve.length - 1; i++) {
-      if (o >= curve[i].oat && o <= curve[i+1].oat)
-        return { q: interp1(o, curve[i].oat, curve[i].q, curve[i+1].oat, curve[i+1].q), clamped: false };
-    }
-    return { q: curve[curve.length-1].q, clamped: true };
-  }
-  const rLo  = interpAtOAT(cLo, oat);
-  const rHi  = interpAtOAT(cHi, oat);
-  const refQ = (paLo === paHi) ? rLo.q : interp1(pa, paLo, rLo.q, paHi, rHi.q);
+  const cLo  = chart.curves[String(paLo)];
+  const cHi  = chart.curves[String(paHi)];
+  const qLo  = interpAlongCurve(cLo, oat);
+  const qHi  = interpAlongCurve(cHi, oat);
+  const outsideOAT = (oat < cLo[0].x || oat > cLo[cLo.length-1].x ||
+                       oat < cHi[0].x || oat > cHi[cHi.length-1].x);
+  const refQ = (paLo === paHi) ? qLo : interp1(pa, paLo, qLo, paHi, qHi);
   return {
     ok: true,
     refQ:       Math.round(refQ),
+    refQExact:  refQ,
     paLo, paHi,
-    qLo:        Math.round(rLo.q),
-    qHi:        Math.round(rHi.q),
-    outsideOAT: rLo.clamped || rHi.clamped,
+    qLo:        Math.round(qLo),
+    qHi:        Math.round(qHi),
+    outsideOAT,
     traceOAT:   oat,
     tracePA:    pa,
   };

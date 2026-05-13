@@ -2123,7 +2123,7 @@ function _drawAnnexBTrace(canvas, result) {
   const t  = ANNEX_B_TRACE;
   const sx = W / t.imgW;
   const sy = H / t.imgH;
-  const { traceOAT, refQ } = result;
+  const { traceOAT, refQ, refQExact = refQ } = result;
 
   const dot = (px, py, col, r) => {
     ctx.beginPath(); ctx.arc(px, py, ((r || t.dotRadius) + 2) * sx, 0, Math.PI * 2);
@@ -2152,7 +2152,7 @@ function _drawAnnexBTrace(canvas, result) {
   // Enter at OAT on X axis (bottom), read UP to PA curve, then LEFT to Y axis
   // Horizontal extends 50px into the white margin left of the Y axis legend (x=252).
   // OAT label sits at y=1389, clear of the x-axis legend area (y=1286-1463).
-  const pRes      = _annexBPx(traceOAT, refQ, W, H);
+  const pRes      = _annexBPx(traceOAT, refQExact, W, H);
   const pYAxis    = _annexBPx(t.oatMin, refQ, W, H);
   const pxExtend  = 252 * sx;          // 50px into white margin past Y label
   const pyOATLbl  = 1389 * sy;         // clear of x-axis legend

@@ -1,5 +1,5 @@
 # CH-149-511 Performance App — Session Handoff
-## App version: v1.3
+## App version: v1.4
 
 ---
 
@@ -31,7 +31,47 @@ All JS/CSS files have Windows CRLF (`\r\n`). index.html has LF only. String repl
 
 ---
 
-## Trace system — architecture (v1.3)
+## Annex B data architecture — single source of truth
+
+`getAnnexBRefQ()` (used by the trace) and `getPowerAvailable()` (used by the tab display and SAR check) both read from **`AC.perf.powerAvailable.aiOff`** → `PWR_AVAIL_OEI_AI_OFF` in `config.js`.
+
+**`ANNEX_B_PA` no longer exists.** It was removed. There is one dataset. Correct a curve in `PWR_AVAIL_OEI_AI_OFF` and both the data display and the trace update automatically.
+
+Curves use `{x: OAT, y: %Q}` format. `interpAlongCurve(curve, oat)` is the lookup helper.
+
+### Annex B curve validation status
+
+41 reference points verified against the paper chart. Average error 0.25%Q. No errors ≥1.5%Q.
+
+| Curve | Verified anchor OATs | Notes |
+|-------|---------------------|-------|
+| -2000ft | none — digitised only | Not yet spot-checked |
+| 0ft | 10, 20, 30, 35 | Warm end verified |
+| 1000ft | -40, -30, -20, 0, 10, 20 | Full range verified |
+| 2000ft | 0, 10, 20, 30 | Mid/warm verified |
+| 3000ft | -40, -30, -20, 10 | Cold end + OAT=10 verified |
+| 4000ft | -40, -30, -10, 0, 10, 20, 40 | Fully verified |
+| 5000ft | -40, -30, -20, 5 | Cold end + OAT=5 verified |
+| 6000ft | -40, -30, -20, 8, 10 | Cold end + warm spot-checks |
+| 7000ft | -40, -30, -10, 0, 10, 20 | Fully verified |
+| 8000ft | -40 | Cold spot only — warm end digitised |
+| 9000ft | none | Digitised only |
+| 10000ft | none | Digitised only |
+| 12000ft | none | Digitised only |
+| 14000ft | none | Digitised only |
+
+**Priority for next session**: verify 9000–14000ft curves — these are the most safety-critical OEI scenarios.
+
+### Known boundary cases (not errors)
+
+| Condition | App shows | True value | Notes |
+|-----------|-----------|------------|-------|
+| PA=2500, OAT=10 | 118%Q | 117.5%Q | Rounds up; conservative |
+| PA=4600, OAT=5 | 111%Q | 110.6%Q | Rounds up; conservative |
+
+---
+
+## Trace system — architecture (v1.4)
 
 ### UX pattern (app-wide, all charts)
 1. Chart shown as collapsed `<details>` — thumbnail hidden until expanded
@@ -47,7 +87,7 @@ buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn)
 ```
 - `traceFn(canvas)` — draws trace on a canvas overlay in fullscreen
 - `summaryFn()` — returns a `.trace-summary` DOM node shown below thumbnail
-- All six `buildXxxChartDetailsWithTrace` wrappers call this factory
+- All `buildXxxChartDetailsWithTrace` wrappers call this factory
 
 ### openChartViewer signature
 ```javascript
@@ -64,134 +104,47 @@ openChartViewer(imgEntry, traceFn)
 - White halo labels: `rgba(255,255,255,0.85)`
 - All sizes scaled by `sx = CW/imgW`
 
+### HLDF trace — out-of-envelope behaviour (v1.4)
+
+When TV is below the chart's left edge (aircraft cannot hover AEO at this DA/AUW), `getHeightLoss` returns `{ ok: true, anyHeight: true, xRef: null, tv }`. The trace draws the TV line across the upper panel and stops — no lower panel intersection. The display shows **"HT LOSS EXCEEDS 400 ft"** (not "ANY HEIGHT" — that term is reserved for SR).
+
+When the lower panel runs off the right edge (wind drives HL past 400ft), `xRef` is present but `hlFt` is null. Trace draws normally through the upper panel and into the lower panel as far as it goes.
+
+`buildHLDFChartDetailsWithTrace` enables the trace whenever `tv` is present, regardless of whether the result is a clean value or anyHeight.
+
 ---
 
 ## Trace status — complete
 
 | Chart | Tab(s) | Status |
 |-------|--------|--------|
-| Annex B | Pre-Takeoff, SAR Check | ✅ Done — pixel-calibrated, bottom-entry direction, AI ON note in summary — **calibration fix pending (see below)** |
+| Annex B | Pre-Takeoff, SAR Check | ✅ Done — piecewise X calibration (-45 to -40 doubled spacing), `refQExact` used for dot placement |
 | HOGE AI OFF (Fig 4-67) | SAR Check | ✅ Done |
 | HOGE AI ON (Fig 4-54) | SAR Check | ✅ Done |
 | TV AI OFF (Fig 4-66) | SAR Check | ✅ Done |
 | TV AI ON (Fig 4-70) | SAR Check | ✅ Done |
-| HLDF AI OFF (Fig 4-68) | SAR Check | ✅ Done |
-| HLDF AI ON (Fig 4-71) | SAR Check | ✅ Done |
+| HLDF AI OFF (Fig 4-68) | SAR Check | ✅ Done — anyHeight handled |
+| HLDF AI ON (Fig 4-71) | SAR Check | ✅ Done — anyHeight handled |
 | SR AI OFF (Fig 4-69) | SAR Check | ✅ Done |
 | SR AI ON (Fig 4-72) | SAR Check | ✅ Done |
 | Max Mass to Hover Max Cont AI OFF (Fig 4-21) | Hover | ✅ Done |
 | Max Mass to Hover Max Cont AI ON (Fig 4-27) | Hover | ✅ Done |
 | Max Mass to Hover 30 Min AI OFF (Fig 4-19) | Hover | ✅ Done |
 | Max Mass to Hover 30 Min AI ON (Fig 4-25) | Hover | ✅ Done |
-| Power Assurance — all four bands | Power Assurance | ✅ Done (existing) |
-| Height Loss / Min Fwd Reject | SAR Check | ✅ Done (existing) |
+| Power Assurance — all four bands | Power Assurance | ✅ Done |
+| Height Loss / Min Fwd Reject | SAR Check | ✅ Done |
 
 ---
 
 ## Pixel calibration — all charts
 
-### Annex B (1700×2200px) — ⚠️ CALIBRATION FIX PENDING
-
-**The current app.js code is wrong and needs the two changes below applied.**
-
-#### Problem identified
-- X axis has a **non-linear section**: the -45°C to -40°C interval is doubled width
-  compared to every other 5°C step (there is a full tick between -45 and -40)
-- Y axis k value (px per %Q) was slightly off — current code implies ~8.25, correct is 8.0
-
-#### Verified reference points (used to derive calibration)
-| PA (ft) | OAT (°C) | Expected %Q | Expected pixel |
-|---------|----------|-------------|----------------|
-| 0 | 0 | 133% | x=983, y=783 |
-| 204 | 16 | 124% | x=1138, y=856 |
-| 2200 | 16 | 114% | x=1140, y=937 |
-| 4000 | -20 | 125% | x=789, y=848 |
-| 5000 | -30 | 124% | x=689, y=856 |
-| 9000 | -15 | ~99.5% | x=837, y=1051 |
-| -1000 | 30 | 116% | x=1279, y=917 |
-
-#### X axis pixel anchors (OAT)
-| OAT | x (px) |
-|-----|--------|
-| -45°C | 492 |
-| -42.5°C | 541 |
-| -40°C | 591 |
-| -35°C | 639 |
-| +40°C | 1373 |
-
-- Segment -45°C to -40°C: **19.8 px/°C** (doubled spacing)
-- Segment -40°C to +40°C: **9.775 px/°C** (normal spacing)
-
-#### Y axis calibration
-- y at 140%Q: **727**
-- y at 70%Q: **1287**
-- k = **8.0 px per %Q**
-
----
-
-#### Fix — Change 1: Update `ANNEX_B_TRACE` constant and comment in `app.js`
-
-Find:
-```javascript
-// Annex B pixel calibration (1700x2200px):
-//   X (OAT): x=544 (-45C)  x=1373 (+40C)
-//   Y (%Q):  y=728 (140%)  y=1286 (70%)
-//   Verified: PA=0 OAT=0C -> Q=133% @ (983,782) ✓
-//             PA=2000 OAT=-20C -> Q=133% @ (788,779) ✓
-const ANNEX_B_TRACE = {
-  xOATneg45: 544,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
-  yQ140:     728,  yQ70:   1286,  qMin:    70, qMax:  140,
-```
-
-Replace with:
-```javascript
-// Annex B pixel calibration (1700x2200px):
-//   X (OAT): x=492 (-45C)  x=591 (-40C)  x=1373 (+40C)
-//            -45 to -40: 19.8 px/C (doubled spacing)
-//            -40 to +40: 9.775 px/C (normal spacing)
-//   Y (%Q):  y=727 (140%)  y=1287 (70%)  k=8.0 px/%Q
-//   Verified: PA=0 OAT=0C -> Q=133% @ (983,783) ✓
-//             PA=5000 OAT=-30C -> Q=124% @ (689,856) ✓
-//             PA=9000 OAT=-15C -> Q=99.5% @ (837,1051) ✓
-const ANNEX_B_TRACE = {
-  xOATneg45: 492,  xOATneg40: 591,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
-  yQ140:     727,  yQ70:      1287,  qMin:    70, qMax:  140,
-```
-
----
-
-#### Fix — Change 2: Replace `_annexBPx` function in `app.js`
-
-Find:
-```javascript
-function _annexBPx(oat, q, W, H) {
-  const t  = ANNEX_B_TRACE;
-  const sx = W / t.imgW;
-  const sy = H / t.imgH;
-  return {
-    px: (t.xOATneg45 + (oat - t.oatMin) * (t.xOAT40 - t.xOATneg45) / (t.oatMax - t.oatMin)) * sx,
-    py: (t.yQ140     + (q   - t.qMax)   * (t.yQ70   - t.yQ140)      / (t.qMin   - t.qMax))   * sy,
-  };
-}
-```
-
-Replace with:
-```javascript
-function _annexBPx(oat, q, W, H) {
-  const t  = ANNEX_B_TRACE;
-  const sx = W / t.imgW;
-  const sy = H / t.imgH;
-  const rawX = oat < -40
-    ? t.xOATneg45  + (oat - (-45)) * (t.xOATneg40 - t.xOATneg45) / (-40 - (-45))
-    : t.xOATneg40  + (oat - (-40)) * (t.xOAT40    - t.xOATneg40) / (40  - (-40));
-  return {
-    px: rawX * sx,
-    py: (t.yQ140 + (q - t.qMax) * (t.yQ70 - t.yQ140) / (t.qMin - t.qMax)) * sy,
-  };
-}
-```
-
----
+### Annex B (1700×2200px)
+- X (OAT): x=492 (−45°C) → x=591 (−40°C) → x=1373 (+40°C)
+  - Segment −45 to −40°C: **19.8 px/°C** (doubled spacing — non-linear axis)
+  - Segment −40 to +40°C: **9.775 px/°C** (normal spacing)
+- Y (%Q): y=727 (140%) → y=1287 (70%), k=8.0 px/%Q
+- `_annexBPx(oat, q, W, H)` uses piecewise X interpolation
+- `refQExact` (unrounded float) used for trace dot placement; `refQ` (rounded) for display
 
 ### HOGE AI OFF (Fig 4-67, 1700×2200px)
 - X (%Q): x=446 (50%) → x=1475 (130%)
@@ -247,7 +200,20 @@ function _annexBPx(oat, q, W, H) {
 
 | Tab | Status | Notes |
 |-----|--------|-------|
-| Climb Performance | Pending | Charts TBD — awaiting pilot input on which FM figures to include |
+| Climb Performance | Next — awaiting FM figure selection | See below |
+| Hover tab rename | Under consideration | May be misleading — being socialised |
+
+### Climb Performance tab — implementation notes
+
+Charts TBD pending pilot input on which FM figures to include. When ready:
+
+1. **Add chart data** to `config.js` as new constants, wire into `AC_PERF`
+2. **Add compute functions** to `compute.js` — follow existing pattern: pure math, no DOM, reads `AC.perf.*`
+3. **Add tab panel** to `index.html` — follow existing tab skeleton pattern
+4. **Add render function** to `app.js` — follow `renderHover()` / `renderSARCheckHOGE()` pattern
+5. **Add trace** using `buildChartDetailsWithTrace` factory — see trace architecture above
+
+File architecture separation is absolute: no DOM in compute.js, no data in app.js.
 
 ---
 
@@ -255,10 +221,10 @@ function _annexBPx(oat, q, W, H) {
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Annex B X/Y calibration fix | ⚠️ High | Two edits to app.js fully documented above — ready to apply |
-| SR AI ON upper panel AUW=14000 curve digitisation | Medium | xRef reads 37ft but expected ~44ft for TV=9.34. Needs re-digitisation of that specific curve |
-| SR AI ON lower panel curve data (xRef=20–40) | Medium | yToWind fixed but some curves have poor digitisation causing non-monotone wind behaviour |
-| Max Mass to Hover 30 Min — wind panel field name | ✅ Fixed | `kt:` renamed to `wind:` in HOV_30MIN_AI_OFF_WIND and HOV_30MIN_AI_ON_WIND |
+| Annex B curves 9000–14000ft | ⚠️ High | Not yet spot-checked against paper chart — safety-critical OEI range |
+| SR AI ON upper panel AUW=14000 digitisation | Medium | xRef reads 37ft but expected ~44ft for TV=9.34. Needs re-digitisation |
+| SR AI ON lower panel (xRef=20–40) | Medium | Some curves have poor digitisation causing non-monotone wind behaviour |
+| Hover tab rename | Pending | Being socialised — no code change until decision made |
 
 ---
 
@@ -275,6 +241,15 @@ function _annexBPx(oat, q, W, H) {
 
 **Validation after compute changes**:
 ```javascript
-const localStorage = { getItem: () => null };
+const localStorage = { getItem: () => null, setItem: () => {} };
 // prepend to combined config+compute file, then node test.js
+```
+
+**Full SAR check test harness**:
+```javascript
+// cat stubs + config.js + compute.js > test.js, then append:
+const hl = getHeightLoss({pa, oat, auw, wind, antiIce});
+const sr = getSafeReject({pa, oat, auw, wind, antiIce});
+const hoge = getHOGE({pa, oat, auw, wind, antiIce});  // note: pa+oat, not da
+const pwr = getPowerAvailable(pa, oat, antiIce);
 ```
