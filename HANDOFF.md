@@ -31,43 +31,71 @@ All JS/CSS files have Windows CRLF (`\r\n`). index.html has LF only. String repl
 
 ---
 
-## Annex B data architecture — single source of truth
+## Annex B — single source of truth
 
-`getAnnexBRefQ()` (used by the trace) and `getPowerAvailable()` (used by the tab display and SAR check) both read from **`AC.perf.powerAvailable.aiOff`** → `PWR_AVAIL_OEI_AI_OFF` in `config.js`.
+`getAnnexBRefQ()` (trace) and `getPowerAvailable()` (tab display, SAR check) both read from **`AC.perf.powerAvailable.aiOff`** → `PWR_AVAIL_OEI_AI_OFF` in `config.js`.
 
-**`ANNEX_B_PA` no longer exists.** It was removed. There is one dataset. Correct a curve in `PWR_AVAIL_OEI_AI_OFF` and both the data display and the trace update automatically.
+**`ANNEX_B_PA` does not exist.** It was removed. There is one dataset. Correct a curve in `PWR_AVAIL_OEI_AI_OFF` and both the data display and trace update automatically.
 
-Curves use `{x: OAT, y: %Q}` format. `interpAlongCurve(curve, oat)` is the lookup helper.
+Curves use `{x: OAT, y: %Q}` format. `interpAlongCurve(curve, oat)` is the lookup helper in compute.js.
 
-### Annex B curve validation status
+`getAnnexBRefQ` returns both `refQ` (rounded integer, for display) and `refQExact` (raw float, for trace dot placement). `_drawAnnexBTrace` uses `refQExact` so the dot sits at the true interpolated value rather than the rounded one.
 
-41 reference points verified against the paper chart. Average error 0.25%Q. No errors ≥1.5%Q.
+### Session-start verification
 
-| Curve | Verified anchor OATs | Notes |
-|-------|---------------------|-------|
-| -2000ft | none — digitised only | Not yet spot-checked |
-| 0ft | 10, 20, 30, 35 | Warm end verified |
-| 1000ft | -40, -30, -20, 0, 10, 20 | Full range verified |
-| 2000ft | 0, 10, 20, 30 | Mid/warm verified |
-| 3000ft | -40, -30, -20, 10 | Cold end + OAT=10 verified |
-| 4000ft | -40, -30, -10, 0, 10, 20, 40 | Fully verified |
-| 5000ft | -40, -30, -20, 5 | Cold end + OAT=5 verified |
-| 6000ft | -40, -30, -20, 8, 10 | Cold end + warm spot-checks |
-| 7000ft | -40, -30, -10, 0, 10, 20 | Fully verified |
-| 8000ft | -40 | Cold spot only — warm end digitised |
-| 9000ft | none | Digitised only |
-| 10000ft | none | Digitised only |
-| 12000ft | none | Digitised only |
-| 14000ft | none | Digitised only |
+At the start of any session that touches compute.js, confirm the single-source architecture is intact:
 
-**Priority for next session**: verify 9000–14000ft curves — these are the most safety-critical OEI scenarios.
+```javascript
+// cat stubs + config.js + compute.js > test.js, then:
+const ab = getAnnexBRefQ({pa:3000, oat:10});
+const pw = getPowerAvailable(3000, 10, 'OFF');
+console.log(Math.abs(ab.refQExact - pw.oeiRaw) < 0.001 ? 'OK' : 'MISMATCH');
+// Must print OK. If MISMATCH, getAnnexBRefQ is reading a different source.
+```
 
-### Known boundary cases (not errors)
+---
+
+## Annex B curve accuracy
+
+45 reference points verified against paper chart. Average error 0.23%Q. No errors ≥1.5%Q.
+
+### Curve validation status
+
+| Curve | OAT range in data | Verified anchor OATs | Notes |
+|-------|-------------------|---------------------|-------|
+| -2000ft | -44.9 to 39.2 | none | Digitised only |
+| 0ft | -45.1 to 39.4 | 10, 20, 30, 35 | Warm end verified |
+| 1000ft | -45.2 to 39.5 | -40, -30, -20, 0, 10, 20 | Full range verified |
+| 2000ft | -45.1 to 39.2 | 0, 10, 20, 30 | Mid/warm verified |
+| 3000ft | -45.0 to 39.5 | -40, -30, -20, 10 | Cold end + OAT=10 |
+| 4000ft | -45.0 to 39.1 | -40, -30, -10, 0, 10, 20, 40 | Fully verified |
+| 5000ft | -45.0 to 39.4 | -40, -30, -20, 5 | Cold end + OAT=5 |
+| 6000ft | -45.0 to 39.4 | -40, -30, -20, 8, 10 | Cold end + warm spot-checks |
+| 7000ft | -45.1 to 30.2 | -40, -30, -10, 0, 10, 20 | Fully verified — chart ends ~30°C |
+| 8000ft | -45.1 to 30.0 | -40 | Cold spot only |
+| 9000ft | -45.0 to 30.0 | none | Digitised only |
+| 10000ft | -45.1 to 30.1 | none | Digitised only |
+| 12000ft | -44.8 to 23.5 | none | Digitised only — chart ends ~24°C |
+| 14000ft | -45.1 to 13.0 | none | Digitised only — chart ends ~13°C |
+
+**Priority for next session**: verify 8000–14000ft curves — most safety-critical OEI range, no spot-checks done.
+
+### Known boundary rounding cases
 
 | Condition | App shows | True value | Notes |
 |-----------|-----------|------------|-------|
 | PA=2500, OAT=10 | 118%Q | 117.5%Q | Rounds up; conservative |
 | PA=4600, OAT=5 | 111%Q | 110.6%Q | Rounds up; conservative |
+
+### Expected out-of-envelope behaviour (not bugs)
+
+Curves 7000–14000ft have genuine warm-end chart limits where the aircraft hits the 70%Q floor. `getPowerAvailable` correctly returns `!ok, reason: temp_outside_curve` — this is correct behaviour:
+
+| Curves | Warm OAT chart limit |
+|--------|---------------------|
+| 7000–10000ft | ~30°C |
+| 12000ft | ~24°C |
+| 14000ft | ~13°C |
 
 ---
 
@@ -104,13 +132,15 @@ openChartViewer(imgEntry, traceFn)
 - White halo labels: `rgba(255,255,255,0.85)`
 - All sizes scaled by `sx = CW/imgW`
 
-### HLDF trace — out-of-envelope behaviour (v1.4)
+### HLDF out-of-envelope behaviour
 
-When TV is below the chart's left edge (aircraft cannot hover AEO at this DA/AUW), `getHeightLoss` returns `{ ok: true, anyHeight: true, xRef: null, tv }`. The trace draws the TV line across the upper panel and stops — no lower panel intersection. The display shows **"HT LOSS EXCEEDS 400 ft"** (not "ANY HEIGHT" — that term is reserved for SR).
+`getHeightLoss` returns `{ ok:true, anyHeight:true, hlFt:null, xRef:null, tv }` when TV is below the chart's left edge (aircraft cannot hover AEO — HLDF would exceed 400ft). Also returns `anyHeight` when the lower panel runs off the right edge.
 
-When the lower panel runs off the right edge (wind drives HL past 400ft), `xRef` is present but `hlFt` is null. Trace draws normally through the upper panel and into the lower panel as far as it goes.
+- Tab and brief display: **"HT LOSS EXCEEDS 400 ft"**
+- Trace draws the TV line across the upper panel and stops when `xRef` is null
+- `buildHLDFChartDetailsWithTrace` enables trace whenever `tv` is present
 
-`buildHLDFChartDetailsWithTrace` enables the trace whenever `tv` is present, regardless of whether the result is a clean value or anyHeight.
+**"ANY HEIGHT" is SR-only.** HLDF uses "HT LOSS EXCEEDS 400 ft". Never conflate these.
 
 ---
 
@@ -118,7 +148,7 @@ When the lower panel runs off the right edge (wind drives HL past 400ft), `xRef`
 
 | Chart | Tab(s) | Status |
 |-------|--------|--------|
-| Annex B | Pre-Takeoff, SAR Check | ✅ Done — piecewise X calibration (-45 to -40 doubled spacing), `refQExact` used for dot placement |
+| Annex B | Pre-Takeoff, SAR Check | ✅ Done — piecewise X calibration, `refQExact` dot placement |
 | HOGE AI OFF (Fig 4-67) | SAR Check | ✅ Done |
 | HOGE AI ON (Fig 4-54) | SAR Check | ✅ Done |
 | TV AI OFF (Fig 4-66) | SAR Check | ✅ Done |
@@ -144,7 +174,7 @@ When the lower panel runs off the right edge (wind drives HL past 400ft), `xRef`
   - Segment −40 to +40°C: **9.775 px/°C** (normal spacing)
 - Y (%Q): y=727 (140%) → y=1287 (70%), k=8.0 px/%Q
 - `_annexBPx(oat, q, W, H)` uses piecewise X interpolation
-- `refQExact` (unrounded float) used for trace dot placement; `refQ` (rounded) for display
+- `refQExact` used for dot placement; `refQ` for labels
 
 ### HOGE AI OFF (Fig 4-67, 1700×2200px)
 - X (%Q): x=446 (50%) → x=1475 (130%)
@@ -201,19 +231,17 @@ When the lower panel runs off the right edge (wind drives HL past 400ft), `xRef`
 | Tab | Status | Notes |
 |-----|--------|-------|
 | Climb Performance | Next — awaiting FM figure selection | See below |
-| Hover tab rename | Under consideration | May be misleading — being socialised |
+| Hover tab rename | Under consideration | Being socialised — no code change until decided |
 
-### Climb Performance tab — implementation notes
+### Climb Performance tab — implementation pattern
 
-Charts TBD pending pilot input on which FM figures to include. When ready:
+When FM figures are confirmed:
 
-1. **Add chart data** to `config.js` as new constants, wire into `AC_PERF`
-2. **Add compute functions** to `compute.js` — follow existing pattern: pure math, no DOM, reads `AC.perf.*`
-3. **Add tab panel** to `index.html` — follow existing tab skeleton pattern
-4. **Add render function** to `app.js` — follow `renderHover()` / `renderSARCheckHOGE()` pattern
-5. **Add trace** using `buildChartDetailsWithTrace` factory — see trace architecture above
-
-File architecture separation is absolute: no DOM in compute.js, no data in app.js.
+1. Add chart data to `config.js` as new constants, wire into `AC_PERF`
+2. Add compute functions to `compute.js` — pure math, no DOM, reads `AC.perf.*`
+3. Add tab panel to `index.html` — follow existing tab skeleton
+4. Add render function to `app.js` — follow `renderHover()` pattern
+5. Add trace using `buildChartDetailsWithTrace` factory
 
 ---
 
@@ -221,16 +249,16 @@ File architecture separation is absolute: no DOM in compute.js, no data in app.j
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Annex B curves 9000–14000ft | ⚠️ High | Not yet spot-checked against paper chart — safety-critical OEI range |
-| SR AI ON upper panel AUW=14000 digitisation | Medium | xRef reads 37ft but expected ~44ft for TV=9.34. Needs re-digitisation |
-| SR AI ON lower panel (xRef=20–40) | Medium | Some curves have poor digitisation causing non-monotone wind behaviour |
-| Hover tab rename | Pending | Being socialised — no code change until decision made |
+| Annex B curves 8000–14000ft | ⚠️ High | No spot-checks against paper chart — safety-critical OEI range |
+| SR AI ON upper panel AUW=14000 digitisation | Medium | xRef reads 37ft, expected ~44ft for TV=9.34 — needs re-digitisation |
+| SR AI ON lower panel xRef=20–40 | Medium | Some curves non-monotone wind behaviour |
+| Hover tab rename | Pending | Awaiting decision |
 
 ---
 
 ## Working session protocol
 
-1. User uploads current files first
+1. Upload all five current files
 2. `cp` uploaded files to `/home/claude/` as working copies
 3. All edits on `/home/claude/` copies
 4. `node --check` after every edit
@@ -239,17 +267,33 @@ File architecture separation is absolute: no DOM in compute.js, no data in app.j
 
 **String replacement failures**: check line endings with `cat -A`. JS/CSS = CRLF, HTML = LF.
 
-**Validation after compute changes**:
+**Test harness**:
 ```javascript
 const localStorage = { getItem: () => null, setItem: () => {} };
-// prepend to combined config+compute file, then node test.js
+// cat stubs + config.js + compute.js > test.js, append test code, node test.js
 ```
 
-**Full SAR check test harness**:
+**Function signatures** (common source of bugs — note pa+oat, not da):
 ```javascript
-// cat stubs + config.js + compute.js > test.js, then append:
-const hl = getHeightLoss({pa, oat, auw, wind, antiIce});
-const sr = getSafeReject({pa, oat, auw, wind, antiIce});
-const hoge = getHOGE({pa, oat, auw, wind, antiIce});  // note: pa+oat, not da
-const pwr = getPowerAvailable(pa, oat, antiIce);
+getHOGE({pa, oat, auw, wind, antiIce})
+getHeightLoss({pa, oat, auw, wind, antiIce})
+getSafeReject({pa, oat, auw, wind, antiIce})
+getPowerAvailable(pa, oat, antiIce)
+getAnnexBRefQ({pa, oat})          // returns refQ (rounded) + refQExact (float)
+getTransferValue(pa, oat, antiIce)
+```
+
+**Stress test** — run at end of any session touching compute or config:
+```javascript
+// 117 should pass, 9 are expected chart limits (correct behaviour)
+for(const pa of [-2000,0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,12000,14000]){
+  for(const oat of [-45,-30,-20,-10,0,10,20,30,40]){
+    const r = getPowerAvailable(pa, oat, 'OFF');
+    if (!r.ok) console.log('!ok PA='+pa+' OAT='+oat+': '+r.reason);
+  }
+}
+// Expected !ok (genuine chart limits, not bugs):
+// 7000-10000ft at OAT=40
+// 12000ft at OAT=30 and 40
+// 14000ft at OAT=20, 30, and 40
 ```
