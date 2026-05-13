@@ -662,13 +662,13 @@ function getHeightLoss({ pa, oat, auw, wind, antiIce }) {
   }
 
   const upperResult = _lookupHLSRUpper(chart, tv, auw);
-  if (upperResult === null) return { ok: false, reason: "tv_outside_curve", tv, auw };
-  // aboveChart on HL has no defined FM rule, treat as out-of-envelope.
-  if (upperResult.aboveChart) return { ok: false, reason: "tv_outside_curve", tv, auw };
+  if (upperResult === null || upperResult.aboveChart)
+    return { ok: true, anyHeight: true, hlFt: null, xRef: null, tv };
   const xRef = upperResult.xRef;
 
   const lowerResult = _lookupHLSRLower(chart, xRef, wind);
   if (!lowerResult.ok) return { ...lowerResult, tv, xRef };
+  if (lowerResult.anyHeight) return { ok: true, anyHeight: true, hlFt: null, xRef, tv };
 
   return { ok: true, hlFt: Math.round(lowerResult.xFinal), xRef, tv };
 }

@@ -70,7 +70,7 @@ openChartViewer(imgEntry, traceFn)
 
 | Chart | Tab(s) | Status |
 |-------|--------|--------|
-| Annex B | Pre-Takeoff, SAR Check | ✅ Done — pixel-calibrated, bottom-entry direction, AI ON note in summary |
+| Annex B | Pre-Takeoff, SAR Check | ✅ Done — pixel-calibrated, bottom-entry direction, AI ON note in summary — **calibration fix pending (see below)** |
 | HOGE AI OFF (Fig 4-67) | SAR Check | ✅ Done |
 | HOGE AI ON (Fig 4-54) | SAR Check | ✅ Done |
 | TV AI OFF (Fig 4-66) | SAR Check | ✅ Done |
@@ -90,10 +90,108 @@ openChartViewer(imgEntry, traceFn)
 
 ## Pixel calibration — all charts
 
-### Annex B (1700×2200px)
-- X (OAT): x=544 (−45°C) → x=1373 (+40°C)
-- Y (%Q): y=728 (140%) → y=1286 (70%)
-- White margin extensions: horizontal to x=252, OAT label at y=1389
+### Annex B (1700×2200px) — ⚠️ CALIBRATION FIX PENDING
+
+**The current app.js code is wrong and needs the two changes below applied.**
+
+#### Problem identified
+- X axis has a **non-linear section**: the -45°C to -40°C interval is doubled width
+  compared to every other 5°C step (there is a full tick between -45 and -40)
+- Y axis k value (px per %Q) was slightly off — current code implies ~8.25, correct is 8.0
+
+#### Verified reference points (used to derive calibration)
+| PA (ft) | OAT (°C) | Expected %Q | Expected pixel |
+|---------|----------|-------------|----------------|
+| 0 | 0 | 133% | x=983, y=783 |
+| 204 | 16 | 124% | x=1138, y=856 |
+| 2200 | 16 | 114% | x=1140, y=937 |
+| 4000 | -20 | 125% | x=789, y=848 |
+| 5000 | -30 | 124% | x=689, y=856 |
+| 9000 | -15 | ~99.5% | x=837, y=1051 |
+| -1000 | 30 | 116% | x=1279, y=917 |
+
+#### X axis pixel anchors (OAT)
+| OAT | x (px) |
+|-----|--------|
+| -45°C | 492 |
+| -42.5°C | 541 |
+| -40°C | 591 |
+| -35°C | 639 |
+| +40°C | 1373 |
+
+- Segment -45°C to -40°C: **19.8 px/°C** (doubled spacing)
+- Segment -40°C to +40°C: **9.775 px/°C** (normal spacing)
+
+#### Y axis calibration
+- y at 140%Q: **727**
+- y at 70%Q: **1287**
+- k = **8.0 px per %Q**
+
+---
+
+#### Fix — Change 1: Update `ANNEX_B_TRACE` constant and comment in `app.js`
+
+Find:
+```javascript
+// Annex B pixel calibration (1700x2200px):
+//   X (OAT): x=544 (-45C)  x=1373 (+40C)
+//   Y (%Q):  y=728 (140%)  y=1286 (70%)
+//   Verified: PA=0 OAT=0C -> Q=133% @ (983,782) ✓
+//             PA=2000 OAT=-20C -> Q=133% @ (788,779) ✓
+const ANNEX_B_TRACE = {
+  xOATneg45: 544,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
+  yQ140:     728,  yQ70:   1286,  qMin:    70, qMax:  140,
+```
+
+Replace with:
+```javascript
+// Annex B pixel calibration (1700x2200px):
+//   X (OAT): x=492 (-45C)  x=591 (-40C)  x=1373 (+40C)
+//            -45 to -40: 19.8 px/C (doubled spacing)
+//            -40 to +40: 9.775 px/C (normal spacing)
+//   Y (%Q):  y=727 (140%)  y=1287 (70%)  k=8.0 px/%Q
+//   Verified: PA=0 OAT=0C -> Q=133% @ (983,783) ✓
+//             PA=5000 OAT=-30C -> Q=124% @ (689,856) ✓
+//             PA=9000 OAT=-15C -> Q=99.5% @ (837,1051) ✓
+const ANNEX_B_TRACE = {
+  xOATneg45: 492,  xOATneg40: 591,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
+  yQ140:     727,  yQ70:      1287,  qMin:    70, qMax:  140,
+```
+
+---
+
+#### Fix — Change 2: Replace `_annexBPx` function in `app.js`
+
+Find:
+```javascript
+function _annexBPx(oat, q, W, H) {
+  const t  = ANNEX_B_TRACE;
+  const sx = W / t.imgW;
+  const sy = H / t.imgH;
+  return {
+    px: (t.xOATneg45 + (oat - t.oatMin) * (t.xOAT40 - t.xOATneg45) / (t.oatMax - t.oatMin)) * sx,
+    py: (t.yQ140     + (q   - t.qMax)   * (t.yQ70   - t.yQ140)      / (t.qMin   - t.qMax))   * sy,
+  };
+}
+```
+
+Replace with:
+```javascript
+function _annexBPx(oat, q, W, H) {
+  const t  = ANNEX_B_TRACE;
+  const sx = W / t.imgW;
+  const sy = H / t.imgH;
+  const rawX = oat < -40
+    ? t.xOATneg45  + (oat - (-45)) * (t.xOATneg40 - t.xOATneg45) / (-40 - (-45))
+    : t.xOATneg40  + (oat - (-40)) * (t.xOAT40    - t.xOATneg40) / (40  - (-40));
+  return {
+    px: rawX * sx,
+    py: (t.yQ140 + (q - t.qMax) * (t.yQ70 - t.yQ140) / (t.qMin - t.qMax)) * sy,
+  };
+}
+```
+
+---
 
 ### HOGE AI OFF (Fig 4-67, 1700×2200px)
 - X (%Q): x=446 (50%) → x=1475 (130%)
@@ -157,6 +255,7 @@ openChartViewer(imgEntry, traceFn)
 
 | Item | Priority | Notes |
 |------|----------|-------|
+| Annex B X/Y calibration fix | ⚠️ High | Two edits to app.js fully documented above — ready to apply |
 | SR AI ON upper panel AUW=14000 curve digitisation | Medium | xRef reads 37ft but expected ~44ft for TV=9.34. Needs re-digitisation of that specific curve |
 | SR AI ON lower panel curve data (xRef=20–40) | Medium | yToWind fixed but some curves have poor digitisation causing non-monotone wind behaviour |
 | Max Mass to Hover 30 Min — wind panel field name | ✅ Fixed | `kt:` renamed to `wind:` in HOV_30MIN_AI_OFF_WIND and HOV_30MIN_AI_ON_WIND |

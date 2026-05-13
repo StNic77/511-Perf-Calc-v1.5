@@ -1076,10 +1076,10 @@ function renderSARCheckHOGE() {
 
     // HL and SR only shown when NOT SAFE OEI
     if (safeOEI === false) {
-      const fmtHLSR = (r, unitLabel) => {
+      const fmtHLSR = (r, unitLabel, anyHeightText) => {
         if (r === null) return { text: "—", muted: true };
         if (r.ok) {
-          if (r.anyHeight) return { text: "ANY HEIGHT", muted: false };
+          if (r.anyHeight) return { text: anyHeightText, muted: false };
           return { text: `${r[unitLabel]} ft`, muted: false };
         }
         if (r.reason === "calibration_pending")
@@ -1089,8 +1089,8 @@ function renderSARCheckHOGE() {
         return { text: `— (${describeError(r)})`, muted: true };
       };
 
-      const hlDisplay = fmtHLSR(hlResult, "hlFt");
-      const srDisplay = fmtHLSR(srResult, "srFt");
+      const hlDisplay = fmtHLSR(hlResult, "hlFt", "HT LOSS EXCEEDS 400 ft");
+      const srDisplay = fmtHLSR(srResult, "srFt", "ANY HEIGHT");
       table.appendChild(workingSheetRow("HL", hlDisplay.text, { muted: hlDisplay.muted }));
       table.appendChild(workingSheetRow("SR", srDisplay.text, { muted: srDisplay.muted }));
     }
@@ -1117,7 +1117,7 @@ function renderSARCheckHOGE() {
 
     const hlOk = hlResult && hlResult.ok;
     const srOk = srResult && srResult.ok;
-    const hlStr = hlOk ? (hlResult.anyHeight ? "ANY HEIGHT" : `${hlResult.hlFt} ft`) : "—";
+    const hlStr = hlOk ? (hlResult.anyHeight ? "HT LOSS EXCEEDS 400 ft" : `${hlResult.hlFt} ft`) : "—";
     const srStr = srOk ? (srResult.anyHeight ? "ANY HEIGHT" : `${srResult.srFt} ft`) : "—";
 
     const safeLabel = safeOEI ? "SAFE OEI OPERATIONS" : "NOT SAFE OEI OPERATIONS";
@@ -2083,13 +2083,16 @@ function renderHover() {
 // Adjust if the chart image changes.
 
 // Annex B pixel calibration (1700x2200px):
-//   X (OAT): x=544 (-45C)  x=1373 (+40C)
-//   Y (%Q):  y=728 (140%)  y=1286 (70%)
-//   Verified: PA=0 OAT=0C -> Q=133% @ (983,782) ✓
-//             PA=2000 OAT=-20C -> Q=133% @ (788,779) ✓
+//   X (OAT): x=492 (-45C)  x=591 (-40C)  x=1373 (+40C)
+//            -45 to -40: 19.8 px/C (doubled spacing)
+//            -40 to +40: 9.775 px/C (normal spacing)
+//   Y (%Q):  y=727 (140%)  y=1287 (70%)  k=8.0 px/%Q
+//   Verified: PA=0 OAT=0C -> Q=133% @ (983,783) ✓
+//             PA=5000 OAT=-30C -> Q=124% @ (689,856) ✓
+//             PA=9000 OAT=-15C -> Q=99.5% @ (837,1051) ✓
 const ANNEX_B_TRACE = {
-  xOATneg45: 544,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
-  yQ140:     728,  yQ70:   1286,  qMin:    70, qMax:  140,
+  xOATneg45: 492,  xOATneg40: 591,  xOAT40: 1373,  oatMin: -45, oatMax: 40,
+  yQ140:     727,  yQ70:      1287,  qMin:    70, qMax:  140,
   imgW:      1700, imgH:   2200,
   colTrace:     "rgba(0,0,0,0.85)",  colTraceDash: [12, 8],
   colDot:       "#ffcc00",
@@ -2103,9 +2106,12 @@ function _annexBPx(oat, q, W, H) {
   const t  = ANNEX_B_TRACE;
   const sx = W / t.imgW;
   const sy = H / t.imgH;
+  const rawX = oat < -40
+    ? t.xOATneg45  + (oat - (-45)) * (t.xOATneg40 - t.xOATneg45) / (-40 - (-45))
+    : t.xOATneg40  + (oat - (-40)) * (t.xOAT40    - t.xOATneg40) / (40  - (-40));
   return {
-    px: (t.xOATneg45 + (oat - t.oatMin) * (t.xOAT40 - t.xOATneg45) / (t.oatMax - t.oatMin)) * sx,
-    py: (t.yQ140     + (q   - t.qMax)   * (t.yQ70   - t.yQ140)      / (t.qMin   - t.qMax))   * sy,
+    px: rawX * sx,
+    py: (t.yQ140 + (q - t.qMax) * (t.yQ70 - t.yQ140) / (t.qMin - t.qMax)) * sy,
   };
 }
 
@@ -2845,8 +2851,26 @@ function _drawHLDFTrace(canvas, hlResult, wind, aiOn) {
   const t = _hldfTrace(aiOn);
   const sx = CW / t.imgW;
   const sy = CH / t.imgH;
-  const { tv, xRef, hlFt } = hlResult;
+  const { tv, xRef, hlFt, anyHeight } = hlResult;
   const windKt = (wind === null || wind === undefined) ? 0 : wind;
+  // If xRef is null (TV off chart), draw TV line only and stop
+  if (anyHeight && xRef === null) {
+    const pyTV = _hldfTV2px(tv, t) * sy;
+    const pxLeft = (t.xHL0 - 15) * sx;
+    const pxRight = (t.xHL400 + 50) * sx;
+    ctx.save(); ctx.beginPath();
+    ctx.strokeStyle = t.colTrace; ctx.lineWidth = t.lineWidth * sx;
+    ctx.setLineDash(t.colTraceDash.map(d => d * sx));
+    ctx.moveTo(pxLeft, pyTV); ctx.lineTo(pxRight, pyTV); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.font = `bold ${Math.round(13*sx)}px sans-serif`;
+    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    ctx.strokeStyle = t.colShadow; ctx.lineWidth = 4*sx; ctx.lineJoin = "round";
+    ctx.strokeText(`TV ${tv.toFixed(1)}`, pxRight - 8*sx, pyTV - 6*sy);
+    ctx.fillStyle = t.colTrace;
+    ctx.fillText(`TV ${tv.toFixed(1)}`, pxRight - 8*sx, pyTV - 6*sy);
+    ctx.restore();
+    return;
+  }
 
   const pxXRef  = _hldfHL2px(xRef, t)  * sx;
   const pxFinal = _hldfHL2px(hlFt, t)  * sx;
@@ -2891,34 +2915,32 @@ function _drawHLDFTrace(canvas, hlResult, wind, aiOn) {
 
   // Panel 2
   if (windKt > 0) {
-    // Horizontal at wind height from xRef to final
     line(pxXRef,  pyWind, pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
     dot(pxXRef,  pyWind, t.colDot);
-    // Vertical drop from wind intersection to bottom
     line(pxFinal, pyWind, pxFinal, pyBot, t.colResult, t.lineWidth, t.colTraceDash);
     dot(pxFinal,  pyWind, t.colResult, t.dotRadius + 3);
   } else {
     line(pxXRef, pyRef, pxXRef, pyBot, t.colResult, t.lineWidth, t.colTraceDash);
   }
 
-  dot(pxFinal, pyBot, t.colResult);
+  if (!anyHeight) dot(pxFinal, pyBot, t.colResult);
 
   // Labels
   lbl(pxXRef - 10*sx, pyTV - 12*sy, `TV ${tv.toFixed(1)}`, t.colTrace, "right", "bottom");
   lbl(pxXRef,         pyRef + 14*sy, `${Math.round(xRef)} ft`, t.colDot, "center", "top");
-  lbl(pxFinal,        pyBot  + 14*sy, `${hlFt} ft`, t.colResult, "center", "top");
+  if (!anyHeight) lbl(pxFinal, pyBot + 14*sy, `${hlFt} ft`, t.colResult, "center", "top");
 }
 
 function _buildHLDFSummaryRow(hlResult, wind) {
   if (!hlResult || !hlResult.ok) return null;
-  const { tv, xRef, hlFt } = hlResult;
+  const { tv, xRef, hlFt, anyHeight } = hlResult;
   const windKt = (wind === null || wind === undefined) ? 0 : wind;
   return el("div", { class: "trace-summary" },
     el("div", { class: "trace-summary__row" },
       el("span", { class: "trace-summary__label" }, "Transfer Value"),
       el("span", { class: "trace-summary__value" }, tv.toFixed(1)),
     ),
-    el("div", { class: "trace-summary__row" },
+    xRef !== null && el("div", { class: "trace-summary__row" },
       el("span", { class: "trace-summary__label" }, "HL (no wind)"),
       el("span", { class: "trace-summary__value" }, `${Math.round(xRef)} ft`),
     ),
@@ -2928,16 +2950,18 @@ function _buildHLDFSummaryRow(hlResult, wind) {
     ),
     el("div", { class: "trace-summary__row trace-summary__row--result" },
       el("span", { class: "trace-summary__label" }, "Min Fwd Reject Ht"),
-      el("span", { class: "trace-summary__value trace-summary__value--result" }, `${hlFt} ft`),
+      el("span", { class: "trace-summary__value trace-summary__value--result" },
+        anyHeight ? "HT LOSS EXCEEDS 400 ft" : `${hlFt} ft`),
     ),
   );
 }
 
 function buildHLDFChartDetailsWithTrace(imgEntry, hlResult, wind, aiOn) {
-  const traceFn   = (hlResult && hlResult.ok)
+  const hasTrace  = hlResult && hlResult.ok && hlResult.tv !== undefined;
+  const traceFn   = hasTrace
     ? (canvas) => _drawHLDFTrace(canvas, hlResult, wind, aiOn)
     : null;
-  const summaryFn = (hlResult && hlResult.ok)
+  const summaryFn = hasTrace
     ? () => _buildHLDFSummaryRow(hlResult, wind)
     : null;
   return buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn);
