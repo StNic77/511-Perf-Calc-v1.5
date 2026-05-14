@@ -324,6 +324,30 @@ body.theme-light .tab--active { color: #ffffff; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Cross-tab pull buttons */
+.pull-btn[hidden] { display: none; }
+.pull-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--accent-dim, rgba(30,140,220,0.15));
+  border: 1px solid var(--accent, #1e8cdc);
+  border-radius: 6px;
+  color: var(--accent, #1e8cdc);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pull-btn:hover {
+  background: var(--accent-dim2, rgba(30,140,220,0.25));
+}
+.pull-btn:active {
+  transform: translateY(1px);
+}
+
 .btn--ghost {
   background: transparent;
   border: 1px solid var(--line);

@@ -69,6 +69,141 @@ const STORE = {
 };
 
 
+// ---- Session snapshot store -----------------------------------------------
+// Tabs write snapshots here as inputs are filled. Pull buttons read from here.
+// Each snapshot is { data: {...}, time: Date } — null means no data yet.
+// This is separate from STORE so tabs remain fully independent; pulling is
+// a convenience, not a dependency. Nothing breaks if a snapshot is absent.
+
+const SESSION = {
+  preTakeOff: null,   // { pa, oat, auw, time }  — written when PreTO has pa+oat
+  sarCheck:   null,   // { pa, oat, auw, wind, time } — written when SAR has all inputs
+  hover:      null,   // { pa, oat, auw, wind, time } — written when Hover has all inputs
+};
+
+function fmtTime(date) {
+  if (!date) return "";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+// Write a PreTakeOff snapshot if pa+oat are both present
+function snapshotPreTakeOff() {
+  const { pa, oat, auw } = STORE.preTakeOff;
+  if (pa !== null && oat !== null) {
+    SESSION.preTakeOff = { pa, oat, auw, time: new Date() };
+  } else {
+    SESSION.preTakeOff = null;
+  }
+  updatePullButtons();
+}
+
+// Write a SAR Check snapshot when any SAR input changes
+function snapshotSARCheck() {
+  const { pa, oat, auw, wind } = STORE.sarCheck;
+  if (pa !== null && oat !== null && auw !== null) {
+    SESSION.sarCheck = { pa, oat, auw, wind: wind !== null ? wind : 0, time: new Date() };
+  } else {
+    SESSION.sarCheck = null;
+  }
+  updatePullButtons();
+}
+
+// Write a Hover snapshot when any Hover input changes
+function snapshotHover() {
+  const { pa, oat, auw, wind } = STORE.hover;
+  if (pa !== null && oat !== null && auw !== null) {
+    SESSION.hover = { pa, oat, auw, wind: wind !== null ? wind : 0, time: new Date() };
+  } else {
+    SESSION.hover = null;
+  }
+  updatePullButtons();
+}
+
+// Show/hide all pull buttons based on what snapshots exist and current mode
+function updatePullButtons() {
+  // PA tab: Pre-Takeoff → PA — only when onGround
+  const paBtn = $("#pullPretoToPaBtn");
+  if (paBtn) {
+    const canPull = SESSION.preTakeOff !== null &&
+                    STORE.powerAssurance.mode === "onGround";
+    paBtn.hidden = !canPull;
+    if (canPull) {
+      paBtn.textContent = `↓ Pull from Pre-Takeoff (${fmtTime(SESSION.preTakeOff.time)})`;
+    }
+  }
+
+  // SAR tab: Hover → SAR — available when Hover snapshot exists
+  const sarFromHovBtn = $("#pullHoverToSarBtn");
+  if (sarFromHovBtn) {
+    const canPull = SESSION.hover !== null;
+    sarFromHovBtn.hidden = !canPull;
+    if (canPull) {
+      sarFromHovBtn.textContent = `↓ Pull from Hover Performance (${fmtTime(SESSION.hover.time)})`;
+    }
+  }
+
+  // Hover tab: SAR Check → Hover — available when SAR snapshot exists
+  const hovFromSarBtn = $("#pullSarToHoverBtn");
+  if (hovFromSarBtn) {
+    const canPull = SESSION.sarCheck !== null;
+    hovFromSarBtn.hidden = !canPull;
+    if (canPull) {
+      hovFromSarBtn.textContent = `↓ Pull from SAR Check (${fmtTime(SESSION.sarCheck.time)})`;
+    }
+  }
+}
+
+// Pull Pre-Takeoff → PA tab (pa + oat only; onGround guard enforced by button visibility)
+function pullPretoToPa() {
+  if (!SESSION.preTakeOff) return;
+  const { pa, oat } = SESSION.preTakeOff;
+  STORE.powerAssurance.pa  = pa;
+  STORE.powerAssurance.oat = oat;
+  const paInput  = $("#paInput");
+  const oatInput = $("#oatInput");
+  if (paInput)  { paInput.value  = pa;  }
+  if (oatInput) { oatInput.value = oat; }
+  rerender();
+}
+
+// Pull Hover Performance → SAR Check (auw + pa + oat + wind)
+function pullHoverToSar() {
+  if (!SESSION.hover) return;
+  const { pa, oat, auw, wind } = SESSION.hover;
+  STORE.sarCheck.pa   = pa;
+  STORE.sarCheck.oat  = oat;
+  STORE.sarCheck.auw  = auw;
+  STORE.sarCheck.wind = wind;
+  const paEl   = $("#sarcbPaInput");
+  const oatEl  = $("#sarcbOatInput");
+  const auwEl  = $("#sarcbAuwInput");
+  const windEl = $("#sarcbWindInput");
+  if (paEl)   paEl.value   = pa;
+  if (oatEl)  oatEl.value  = oat;
+  if (auwEl)  auwEl.value  = auw;
+  if (windEl) windEl.value = wind;
+  rerender();
+}
+
+// Pull SAR Check → Hover (auw + pa + oat + wind)
+function pullSarToHover() {
+  if (!SESSION.sarCheck) return;
+  const { pa, oat, auw, wind } = SESSION.sarCheck;
+  STORE.hover.pa   = pa;
+  STORE.hover.oat  = oat;
+  STORE.hover.auw  = auw;
+  STORE.hover.wind = wind;
+  const paEl   = $("#hovPaInput");
+  const oatEl  = $("#hovOatInput");
+  const auwEl  = $("#hovAuwInput");
+  const windEl = $("#hovWindInput");
+  if (paEl)   paEl.value   = pa;
+  if (oatEl)  oatEl.value  = oat;
+  if (auwEl)  auwEl.value  = auw;
+  if (windEl) windEl.value = wind;
+  rerender();
+}
+
 // ---- DOM helpers ----------------------------------------------------------
 
 const $  = (sel, root = document) => root.querySelector(sel);
@@ -270,6 +405,7 @@ function setMode(mode) {
   for (const node of nodes) hint.appendChild(node);
 
   renderPrecheck();
+  updatePullButtons();
   rerender();
 }
 
@@ -1492,6 +1628,7 @@ function renderPreTakeOffPACalc() {
           if (paInput) {
             paInput.value = pa;
             STORE.preTakeOff.pa = pa;
+            snapshotPreTakeOff();
             renderPreTakeOff();
           }
         },
@@ -3328,6 +3465,7 @@ function init() {
     if (!input) return;
     input.addEventListener("input", (e) => {
       STORE.hover[prop] = num(e.target.value);
+      snapshotHover();
       rerender();
     });
   };
@@ -3378,32 +3516,39 @@ function init() {
   // Pre-Take Off: Condition fields
   $("#pretooffAuwInput").addEventListener("input", (e) => {
     STORE.preTakeOff.auw = num(e.target.value);
+    snapshotPreTakeOff();
     rerender();
   });
   $("#pretooffPaInput").addEventListener("input", (e) => {
     STORE.preTakeOff.pa = num(e.target.value);
+    snapshotPreTakeOff();
     rerender();
   });
   $("#pretooffOatInput").addEventListener("input", (e) => {
     STORE.preTakeOff.oat = num(e.target.value);
+    snapshotPreTakeOff();
     rerender();
   });
 
   // SAR Check: Condition fields
   $("#sarcbAuwInput").addEventListener("input", (e) => {
     STORE.sarCheck.auw = num(e.target.value);
+    snapshotSARCheck();
     rerender();
   });
   $("#sarcbPaInput").addEventListener("input", (e) => {
     STORE.sarCheck.pa = num(e.target.value);
+    snapshotSARCheck();
     rerender();
   });
   $("#sarcbOatInput").addEventListener("input", (e) => {
     STORE.sarCheck.oat = num(e.target.value);
+    snapshotSARCheck();
     rerender();
   });
   $("#sarcbWindInput").addEventListener("input", (e) => {
     STORE.sarCheck.wind = num(e.target.value);
+    snapshotSARCheck();
     rerender();
   });
 
@@ -3419,6 +3564,14 @@ function init() {
   $("#sarcbHogeCalcBtn").addEventListener("click", () => {
     deriveHOGEFromChart();
   });
+
+  // Cross-tab pull buttons
+  const pullPaBtn  = $("#pullPretoToPaBtn");
+  const pullHoverToSarBtn = $("#pullHoverToSarBtn");
+  const pullSarToHovBtn   = $("#pullSarToHoverBtn");
+  if (pullPaBtn)         pullPaBtn.addEventListener("click",         pullPretoToPa);
+  if (pullHoverToSarBtn) pullHoverToSarBtn.addEventListener("click", pullHoverToSar);
+  if (pullSarToHovBtn)   pullSarToHovBtn.addEventListener("click",   pullSarToHover);
 
   // Build the dynamic bits. Power Assurance setup.
   renderEngines();
