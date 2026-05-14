@@ -3490,15 +3490,43 @@ function init() {
     rerender();
   });
 
-  // Pre-Take Off: QNH unit toggle
+  // Pre-Take Off: QNH auto-decimal formatting
+  // inHg: digits typed -> XX.XX (e.g. 2992 -> 29.92)
+  // hPa:  digits typed -> XXX.X or XXXX.X (e.g. 10132->1013.2, 9999->999.9)
+  function formatQNHInput(raw, unit) {
+    const digits = raw.replace(/[^0-9]/g, "");
+    if (!digits) return { display: "", value: null };
+    if (unit === "inhg") {
+      if (digits.length <= 2) return { display: digits, value: null };
+      const display = digits.slice(0, 2) + "." + digits.slice(2, 4);
+      return { display, value: parseFloat(display) };
+    } else {
+      if (digits.length <= 1) return { display: digits, value: null };
+      const display = digits.slice(0, -1) + "." + digits.slice(-1);
+      return { display, value: parseFloat(display) };
+    }
+  }
+
+  // Pre-Take Off: QNH unit toggle - convert stored value and reformat field
   $$("[data-pretooff-qnh]").forEach(btn => {
     btn.addEventListener("click", () => {
-      STORE.preTakeOff.qnhUnit = btn.dataset.pretooffQnh;
+      const newUnit = btn.dataset.pretooffQnh;
+      if (newUnit === STORE.preTakeOff.qnhUnit) return;
+      const oldVal = STORE.preTakeOff.qnh;
+      if (oldVal !== null) {
+        const converted = (newUnit === "hpa")
+          ? Math.round(oldVal * 33.8639 * 10) / 10
+          : Math.round(oldVal / 33.8639 * 100) / 100;
+        STORE.preTakeOff.qnh = converted;
+        const qnhEl = $("#pretooffQnhInput");
+        if (qnhEl) qnhEl.value = converted.toFixed(newUnit === "hpa" ? 1 : 2);
+      }
+      STORE.preTakeOff.qnhUnit = newUnit;
       $$("[data-pretooff-qnh]").forEach(b => {
-        b.classList.toggle("seg__btn--active", b.dataset.pretooffQnh === STORE.preTakeOff.qnhUnit);
+        b.classList.toggle("seg__btn--active", b.dataset.pretooffQnh === newUnit);
       });
       const unitLabel = $("#pretooffQnhUnit");
-      if (unitLabel) unitLabel.textContent = STORE.preTakeOff.qnhUnit === "inhg" ? "inHg" : "mbar";
+      if (unitLabel) unitLabel.textContent = newUnit === "inhg" ? "inHg" : "hPa";
       renderPreTakeOffPACalc();
     });
   });
@@ -3509,7 +3537,14 @@ function init() {
     renderPreTakeOffPACalc();
   });
   $("#pretooffQnhInput").addEventListener("input", (e) => {
-    STORE.preTakeOff.qnh = num(e.target.value);
+    const unit = STORE.preTakeOff.qnhUnit;
+    const { display, value } = formatQNHInput(e.target.value, unit);
+    if (e.target.value !== display) {
+      const pos = e.target.selectionStart;
+      e.target.value = display;
+      try { e.target.setSelectionRange(pos, pos); } catch(_) {}
+    }
+    STORE.preTakeOff.qnh = value;
     renderPreTakeOffPACalc();
   });
 

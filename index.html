@@ -102,7 +102,7 @@
             <div class="field">
               <label class="field__label" for="pretooffQnhInput">Altimeter (QNH)</label>
               <div class="field__input-wrap">
-                <input class="field__input mono" type="number" inputmode="decimal" step="0.01" id="pretooffQnhInput" placeholder="—">
+                <input class="field__input mono" type="text" inputmode="numeric" id="pretooffQnhInput" placeholder="—">
                 <span class="field__unit" id="pretooffQnhUnit">inHg</span>
               </div>
             </div>
@@ -110,7 +110,7 @@
           <div class="seg-row">
             <span class="field__label">QNH Units</span>
             <div class="seg" role="radiogroup" aria-label="QNH units">
-              <button class="seg__btn"                  data-pretooff-qnh="hpa" type="button">mbar</button>
+              <button class="seg__btn"                  data-pretooff-qnh="hpa"  type="button">hPa</button>
               <button class="seg__btn seg__btn--active" data-pretooff-qnh="inhg" type="button">inHg</button>
             </div>
           </div>
