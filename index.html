@@ -6,6 +6,10 @@
   <meta name="theme-color" content="#0b1220">
   <title>CH-149-511 Performance Calculator</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="511 Perf Calc">
 </head>
 <body>
 
@@ -594,5 +598,40 @@
   <script src="config.js"></script>
   <script src="compute.js"></script>
   <script src="app.js"></script>
+
+  <!-- PWA: offline cache banner -->
+  <div id="offline-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;
+    background:#7a4f00;color:#ffe8a0;font-size:13px;font-family:sans-serif;
+    padding:10px 16px;text-align:center;line-height:1.4;">
+    ⚠️ Offline cache not available. Open once on WiFi to enable offline use.
+  </div>
+
+  <script>
+    // Service worker registration + offline cache detection
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        // Cache is present — hide banner (it stays hidden by default)
+        // Check on future updates: new SW will activate and replace cache silently
+      }).catch(() => {
+        // Registration failed — no cache, show banner
+        document.getElementById('offline-banner').style.display = 'block';
+      });
+
+      // If no controller, the SW hasn't activated yet (first load or cache evicted)
+      // Show banner until SW is controlling the page
+      if (!navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(() => {
+          // SW now active and caching — hide banner
+          document.getElementById('offline-banner').style.display = 'none';
+        });
+        // Show temporarily while SW installs on this load
+        // (page will be cached for next open regardless)
+        document.getElementById('offline-banner').style.display = 'block';
+      }
+    } else {
+      // Browser doesn't support SW at all
+      document.getElementById('offline-banner').style.display = 'block';
+    }
+  </script>
 </body>
 </html>
