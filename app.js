@@ -204,6 +204,63 @@ function pullSarToHover() {
   rerender();
 }
 
+// ---- Clear tab conditions ------------------------------------------------
+
+function clearTab(tabName) {
+  if (tabName === "pretooff") {
+    STORE.preTakeOff.auw  = null;
+    STORE.preTakeOff.pa   = null;
+    STORE.preTakeOff.oat  = null;
+    STORE.preTakeOff.elev = null;
+    STORE.preTakeOff.qnh  = null;
+    SESSION.preTakeOff = null;
+    const ids = ["#pretooffAuwInput","#pretooffPaInput","#pretooffOatInput",
+                 "#pretooffElevInput","#pretooffQnhInput"];
+    ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+    renderPreTakeOffPACalc();
+    rerender();
+
+  } else if (tabName === "pa") {
+    STORE.powerAssurance.pa  = null;
+    STORE.powerAssurance.oat = null;
+    for (const n of [1,2,3]) {
+      STORE.powerAssurance.engines[n].engTq  = null;
+      STORE.powerAssurance.engines[n].engTit = null;
+    }
+    const paEl  = $("#paInput");  if (paEl)  paEl.value  = "";
+    const oatEl = $("#oatInput"); if (oatEl) oatEl.value = "";
+    // Rebuild engine cards to clear anonymous inputs
+    renderEngines();
+    rerender();
+
+  } else if (tabName === "sarcb") {
+    STORE.sarCheck.auw       = null;
+    STORE.sarCheck.pa        = null;
+    STORE.sarCheck.oat       = null;
+    STORE.sarCheck.wind      = null;
+    STORE.sarCheck.hogeValue = null;
+    STORE.sarCheck.hogeSource = "pilot";
+    SESSION.sarCheck = null;
+    const ids = ["#sarcbAuwInput","#sarcbPaInput","#sarcbOatInput",
+                 "#sarcbWindInput","#sarcbHogeInput"];
+    ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+    rerender();
+
+  } else if (tabName === "hover") {
+    STORE.hover.auw  = null;
+    STORE.hover.pa   = null;
+    STORE.hover.oat  = null;
+    STORE.hover.wind = null;
+    STORE.hover.tm   = null;
+    SESSION.hover = null;
+    const ids = ["#hovAuwInput","#hovPaInput","#hovOatInput",
+                 "#hovWindInput","#hovTmInput"];
+    ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+    rerender();
+  }
+  updatePullButtons();
+}
+
 // ---- DOM helpers ----------------------------------------------------------
 
 const $  = (sel, root = document) => root.querySelector(sel);
@@ -3494,6 +3551,13 @@ function init() {
   // inHg: digits typed -> XX.XX (e.g. 2992 -> 29.92)
   // hPa:  digits typed -> XXX.X or XXXX.X (e.g. 10132->1013.2, 9999->999.9)
   function formatQNHInput(raw, unit) {
+    if (!raw) return { display: "", value: null };
+    // If user typed their own decimal, trust it directly
+    if (raw.includes(".")) {
+      const v = parseFloat(raw);
+      return { display: raw, value: isNaN(v) ? null : v };
+    }
+    // Pure digits only -- auto-insert decimal
     const digits = raw.replace(/[^0-9]/g, "");
     if (!digits) return { display: "", value: null };
     if (unit === "inhg") {
@@ -3537,14 +3601,8 @@ function init() {
     renderPreTakeOffPACalc();
   });
   $("#pretooffQnhInput").addEventListener("input", (e) => {
-    const unit = STORE.preTakeOff.qnhUnit;
-    const { display, value } = formatQNHInput(e.target.value, unit);
-    if (e.target.value !== display) {
-      const pos = e.target.selectionStart;
-      e.target.value = display;
-      try { e.target.setSelectionRange(pos, pos); } catch(_) {}
-    }
-    STORE.preTakeOff.qnh = value;
+    const v = parseFloat(e.target.value);
+    STORE.preTakeOff.qnh = isNaN(v) ? null : v;
     renderPreTakeOffPACalc();
   });
 
@@ -3598,6 +3656,11 @@ function init() {
   // SAR Check: HOGE — derive from chart
   $("#sarcbHogeCalcBtn").addEventListener("click", () => {
     deriveHOGEFromChart();
+  });
+
+  // Clear buttons
+  $$("[data-clear-tab]").forEach(btn => {
+    btn.addEventListener("click", () => clearTab(btn.dataset.clearTab));
   });
 
   // Cross-tab pull buttons

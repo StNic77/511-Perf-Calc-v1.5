@@ -326,6 +326,24 @@ body.theme-light .tab--active { color: #ffffff; }
 
 /* Cross-tab pull buttons */
 .pull-btn[hidden] { display: none; }
+
+/* Clear conditions button */
+.clear-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text2);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.clear-btn:hover { opacity: 1; border-color: var(--text2); }
+.clear-btn:active { transform: translateY(1px); }
 .pull-btn {
   display: block;
   width: 100%;
