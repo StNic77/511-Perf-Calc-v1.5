@@ -1,6 +1,6 @@
 // 511 Perf Calc — Service Worker
 // Bump CACHE_VERSION on every push to trigger background cache refresh
-const CACHE_VERSION = 'v1.6.2';
+const CACHE_VERSION = 'v1.6.3';
 const CACHE_NAME = '511-perf-calc-' + CACHE_VERSION;
 
 const ASSETS = [
