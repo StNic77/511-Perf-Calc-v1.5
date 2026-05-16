@@ -1465,29 +1465,32 @@ function openChartViewer(imgEntry, traceFn) {
     traceBtn.classList.remove("btn--active");
 
     // Build canvas once img dimensions are known.
-    // Canvas draw space = image rendered CSS pixels (not naturalWidth/Height).
-    // This ensures the canvas is exactly the same size as the displayed image,
-    // fixing trace misalignment on phones/tablets where the fullscreen viewer
-    // is taller than the image (canvas height:100% != image height).
-    // Draw functions use sx=CW/imgW, sy=CH/imgH which scale correctly either way.
+    // Canvas pixel dimensions = image rendered CSS size x devicePixelRatio.
+    // Canvas CSS dimensions   = image rendered CSS size (exact match to img).
+    // This gives sharp lines on Retina/high-DPI screens (iPhone, iPad, Android)
+    // and correct alignment on all screen sizes since canvas covers the image exactly.
+    // sx/sy in all draw functions (CW/imgW, CH/imgH) automatically give the right scale.
     function buildCanvas() {
       if (canvas) canvas.remove();
-      // Use rendered image size so canvas matches image exactly on all screen sizes.
-      const iw = img.offsetWidth  || img.naturalWidth;
-      const ih = img.offsetHeight || img.naturalHeight;
-      canvas = document.createElement("canvas");
-      canvas.width  = iw;
-      canvas.height = ih;
-      canvas.className = "chart-viewer__trace-canvas";
-      canvas.style.cssText = `position:absolute;top:0;left:0;width:${iw}px;height:${ih}px;pointer-events:none;`;
-      imgWrap.appendChild(canvas);
-      if (traceOn) traceFn(canvas);
+      const dpr = window.devicePixelRatio || 1;
+      // requestAnimationFrame ensures layout is settled so offsetWidth/Height are correct.
+      requestAnimationFrame(() => {
+        const iw = img.offsetWidth  || img.naturalWidth;
+        const ih = img.offsetHeight || img.naturalHeight;
+        canvas = document.createElement("canvas");
+        canvas.width  = Math.round(iw * dpr);
+        canvas.height = Math.round(ih * dpr);
+        canvas.className = "chart-viewer__trace-canvas";
+        canvas.style.cssText = `position:absolute;top:0;left:0;width:${iw}px;height:${ih}px;pointer-events:none;`;
+        imgWrap.appendChild(canvas);
+        if (traceOn) traceFn(canvas);
+      });
     }
 
     if (img.complete && img.naturalWidth) buildCanvas();
     else img.addEventListener("load", buildCanvas);
 
-    // Rebuild on orientation change / window resize.
+    // Rebuild on orientation change / window resize so canvas stays matched to image.
     const _resizeObs = new ResizeObserver(() => { if (img.naturalWidth) buildCanvas(); });
     _resizeObs.observe(img);
 
