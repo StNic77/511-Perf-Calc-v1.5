@@ -3761,25 +3761,35 @@ function initSplash() {
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", function () { init(); initSplash(); checkForUpdate(); });
+  document.addEventListener("DOMContentLoaded", function () { checkForUpdate(); init(); initSplash(); });
 } else {
+  checkForUpdate();
   init();
   initSplash();
-  checkForUpdate();
 }
 
 // Version check — fetches version.json from server and shows banner if newer than cached app
+// Runs before initSplash so the banner can appear over the splash screen
 function checkForUpdate() {
   if (typeof AC === "undefined" || !AC.version) return;
+  const btn = document.getElementById("splashAcceptBtn");
+  // Briefly disable the accept button so the check can complete before user enters app
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.5"; }
   fetch("./version.json?_=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data && data.version && data.version !== AC.version) {
         const banner = document.getElementById("updateBanner");
         if (banner) banner.classList.add("visible");
+        // Leave button disabled — user must close and reopen
+      } else {
+        if (btn) { btn.disabled = false; btn.style.opacity = ""; }
       }
     })
-    .catch(function () { /* no connectivity or file missing — silent fail */ });
+    .catch(function () {
+      // Network unavailable — re-enable button and proceed normally
+      if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+    });
 }
 
 // Live-update the reading age display every 30 seconds
