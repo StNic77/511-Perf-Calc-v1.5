@@ -3748,6 +3748,8 @@ function initSplash() {
     if (ver) ver.textContent = "v" + AC.version;
     const footerVer = document.getElementById("footerVersion");
     if (footerVer) footerVer.textContent = "v" + AC.version + footerVer.textContent;
+    const wnVer = document.getElementById("splashWhatsNewVersion");
+    if (wnVer) wnVer.textContent = "v" + AC.version + " — ";
   }
 
   // Dismiss on button click
@@ -3759,10 +3761,26 @@ function initSplash() {
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", function () { init(); initSplash(); });
+  document.addEventListener("DOMContentLoaded", function () { init(); initSplash(); checkForUpdate(); });
 } else {
   init();
   initSplash();
+  checkForUpdate();
+}
+
+// Version check — fetches version.json from server and shows banner if newer than cached app
+function checkForUpdate() {
+  if (typeof AC === "undefined" || !AC.version) return;
+  if (!navigator.onLine) return;
+  fetch("./version.json?_=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data && data.version && data.version !== AC.version) {
+        const banner = document.getElementById("updateBanner");
+        if (banner) banner.classList.add("visible");
+      }
+    })
+    .catch(function () { /* no connectivity or file missing — silent fail */ });
 }
 
 // Live-update the reading age display every 30 seconds

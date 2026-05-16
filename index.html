@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-title" content="511 Perf Calc">
 </head>
 <body>
+<div class="update-banner" id="updateBanner">
+  &#8635; Update available — close and reopen the app to get the latest version.
+</div>
 
   <!-- ===== Splash / Disclaimer ======================================= -->
   <div id="splashScreen" class="splash" role="dialog" aria-modal="true" aria-label="Disclaimer">
@@ -54,6 +57,11 @@
       <button class="splash__accept btn" id="splashAcceptBtn" type="button">
         I Understand &mdash; Enter Application
       </button>
+
+      <div class="splash__whatsnew">
+        <span class="splash__whatsnew-label" id="splashWhatsNewVersion"></span>
+        Hover performance trace overlays corrected. Chart and document references updated. App now notifies when a new version is available.
+      </div>
 
     </div>
   </div>
