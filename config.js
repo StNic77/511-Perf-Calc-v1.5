@@ -2169,7 +2169,7 @@ const CHART_IMAGES = {
 // PA curves: [-1000, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
 const AC = {
   variant: "CH-149-511",
-  version: "1.6.6",
+  version: "1.6.7",
   perf: AC_PERF,
   chartImages: CHART_IMAGES,
 };

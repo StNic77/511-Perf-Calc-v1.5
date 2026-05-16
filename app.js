@@ -3744,8 +3744,10 @@ function initSplash() {
   if (!splash) return;
 
   // Populate version from config
-  if (ver && typeof AC !== "undefined" && AC.version) {
-    ver.textContent = "v" + AC.version;
+  if (typeof AC !== "undefined" && AC.version) {
+    if (ver) ver.textContent = "v" + AC.version;
+    const footerVer = document.getElementById("footerVersion");
+    if (footerVer) footerVer.textContent = "v" + AC.version + footerVer.textContent;
   }
 
   // Dismiss on button click
