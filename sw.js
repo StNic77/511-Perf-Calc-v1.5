@@ -57,8 +57,9 @@ self.addEventListener('activate', event => {
 // Fetch: cache-first, fall back to network
 // version.json always goes direct to network so update checks are never served stale
 self.addEventListener('fetch', event => {
-  // Only handle GET requests for our own origin
+  // Only handle GET requests for our own origin over http/https
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
 
   // version.json — always network, never cache
   if (event.request.url.endsWith('version.json') || event.request.url.includes('version.json?')) {
