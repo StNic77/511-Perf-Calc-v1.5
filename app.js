@@ -1464,20 +1464,33 @@ function openChartViewer(imgEntry, traceFn) {
     traceBtn.textContent = "Show Trace";
     traceBtn.classList.remove("btn--active");
 
-    // Build canvas once img dimensions are known
+    // Build canvas once img dimensions are known.
+    // Canvas draw space = natural image pixels (keeps sx/sy = 1.0 for all trace code).
+    // Canvas CSS size is locked to the image's actual rendered size so the overlay
+    // aligns correctly on all devices including Retina/high-DPI (iPhone, iPad, Android).
+    // A ResizeObserver rebuilds the canvas if the viewer is resized or rotated.
     function buildCanvas() {
       if (canvas) canvas.remove();
       canvas = document.createElement("canvas");
       canvas.width  = img.naturalWidth;
       canvas.height = img.naturalHeight;
       canvas.className = "chart-viewer__trace-canvas";
-      canvas.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;";
+      // Size the canvas CSS to match the image's exact rendered dimensions.
+      // Using width:100%;height:100% would fill the container which may be taller
+      // than the image on portrait phones, causing the trace to be drawn offset.
+      const iw = img.offsetWidth  || img.naturalWidth;
+      const ih = img.offsetHeight || img.naturalHeight;
+      canvas.style.cssText = `position:absolute;top:0;left:0;width:${iw}px;height:${ih}px;pointer-events:none;`;
       imgWrap.appendChild(canvas);
       if (traceOn) traceFn(canvas);
     }
 
     if (img.complete && img.naturalWidth) buildCanvas();
     else img.addEventListener("load", buildCanvas);
+
+    // Rebuild canvas if viewer is resized (orientation change, window resize).
+    const _resizeObs = new ResizeObserver(() => { if (img.naturalWidth) buildCanvas(); });
+    _resizeObs.observe(img);
 
     traceBtn.onclick = () => {
       traceOn = !traceOn;
@@ -2379,11 +2392,15 @@ function buildAnnexBTraceCard(imgSrc, result) {
     style: "position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;",
   });
 
-  // Draw once natural dimensions are known
+  // Draw once natural dimensions are known.
+  // Canvas CSS is locked to img rendered size for correct alignment on all devices.
   const tryDraw = () => {
     if (!img.naturalWidth) return;
     canvas.width  = img.naturalWidth;
     canvas.height = img.naturalHeight;
+    const iw = img.offsetWidth  || img.naturalWidth;
+    const ih = img.offsetHeight || img.naturalHeight;
+    canvas.style.cssText = `position:absolute;top:0;left:0;width:${iw}px;height:${ih}px;pointer-events:none;`;
     _drawAnnexBTrace(canvas, result);
   };
 
