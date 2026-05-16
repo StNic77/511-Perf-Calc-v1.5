@@ -2129,7 +2129,7 @@ const CHART_IMAGES = {
 
   // Charts shared across AI states
   shared: {
-    da:    { src: "images/DA_Conversion.png",           fig: "DA Conversion",  title: "Pressure Altitude to Density Altitude Conversion" },
+    da:    { src: "images/DA_Conversion.png",           fig: "Figure 4-3",    title: "Density/Pressure Altitude Conversion Chart" },
     annexB:{ src: "images/Annex_B.png",                fig: "Annex B",        title: "Engine Power Available OEI (%Q)" },
     pa13Low:  { src: "images/PWR_ASSURANCE_1and3_1000PA.png",  fig: "Fig - 2",   title: "T700/T6A1 Ground and In-Flight Checks (No 1 / No 3 Engines) - Altitude Band: -1000 ft to 1000 ft" },
     pa2Low:   { src: "images/PWR_ASSURANCE_2_1000PA.png",       fig: "Fig - 3",   title: "T700/T6A1 Ground and In-Flight Checks (No 2 Engine) - Altitude Band: -1000 ft to 1000 ft" },
@@ -2139,22 +2139,22 @@ const CHART_IMAGES = {
 
   // AI OFF charts
   aiOff: {
-    tv:   { src: "images/TV_AI_OFF.png",   fig: "Fig 4-67", title: "Transfer Value (AI OFF, ECS OFF/AUTO OFF)" },
-    hoge: { src: "images/HOGE_AI_OFF.png", fig: "Fig 4-53", title: "HOGE (AI OFF, ECS OFF/AUTO OFF)" },
-    hldf: { src: "images/HLDF_AI_OFF.png", fig: "Fig 4-68", title: "Height Loss / Min Fwd Reject Height (AI OFF, ECS OFF/AUTO OFF)" },
-    sr:   { src: "images/SR_AI_OFF.png",   fig: "Fig 4-69", title: "Max Height for Vertical Reject (AI OFF, ECS OFF/AUTO OFF)" },
-    hovMaxMass:      { src: "images/MAX_MASS_TO_HOV_AI_OFF.png",       fig: "Fig 4-21",  title: "Maximum Mass to Hover, 80 ft Wheel Height (AI OFF, ECS OFF)" },
-    hovMaxMass30Min: { src: "images/MAX_MASS_TO_HOV_30MIN_AI_OFF.png", fig: "Fig 4-19",  title: "Maximum Mass to Hover 30 Min, 80 ft Wheel Height (AI OFF, ECS OFF)" },
+    tv:   { src: "images/TV_AI_OFF.png",   fig: "Figure 4-67", commonName: "TV AI OFF",   title: "OEI Ambient Condition Chart for Manoeuvres Following an Engine Failure in the Hover (AI OFF, ECS OFF/AUTO OFF)" },
+    hoge: { src: "images/HOGE_AI_OFF.png", fig: "Figure 4-53", commonName: "HOGE AI OFF", title: "AEO Torque Required to Hover, 80 ft Wheel Height, 0% Thrust Margin (AI OFF, ECS Independent)" },
+    hldf: { src: "images/HLDF_AI_OFF.png", fig: "Figure 4-68", commonName: "HLDF AI OFF", title: "OEI Height Loss for a Flyaway Manoeuvre and Minimum Height for a Forward Reject Manoeuvre (AI OFF, ECS OFF/AUTO OFF)" },
+    sr:   { src: "images/SR_AI_OFF.png",   fig: "Figure 4-69", commonName: "SR AI OFF",   title: "OEI Maximum Height for a Vertical Reject Manoeuvre (AI OFF, ECS OFF/AUTO OFF)" },
+    hovMaxMass:      { src: "images/MAX_MASS_TO_HOV_AI_OFF.png",       fig: "Figure 4-21", commonName: "Max Mass Hover AI OFF",      title: "AEO Maximum Mass to Hover, 80 ft Wheel Height, Headwind, TM Corrections (AI OFF, ECS OFF)" },
+    hovMaxMass30Min: { src: "images/MAX_MASS_TO_HOV_30MIN_AI_OFF.png", fig: "Figure 4-19", commonName: "Max Mass Hover 30 Min AI OFF", title: "AEO Maximum Mass to Hover 30 Min, 80 ft Wheel Height, Headwind, TM Corrections (AI OFF, ECS OFF)" },
   },
 
   // AI ON charts
   aiOn: {
-    tv:   { src: "images/TV_AI_ON.png",   fig: "Fig 4-70", title: "Transfer Value (AI ON, ECS OFF/AUTO OFF)" },
-    hoge: { src: "images/HOGE_AI_ON.png", fig: "Fig 4-54", title: "HOGE (AI ON, ECS Independent)" },
-    hldf: { src: "images/HLDF_AI_ON.png", fig: "Fig 4-71", title: "Height Loss / Min Fwd Reject Height (AI ON, ECS OFF/AUTO OFF)" },
-    sr:   { src: "images/SR_AI_ON.png",   fig: "Fig 4-72", title: "Max Height for Vertical Reject (AI ON, ECS OFF/AUTO OFF)" },
-    hovMaxMass:      { src: "images/MAX_MASS_TO_HOV_AI_ON.png",       fig: "Fig 4-27",  title: "Maximum Mass to Hover, 80 ft Wheel Height (AI ON, ECS OFF)" },
-    hovMaxMass30Min: { src: "images/MAX_MASS_TO_HOV_30MIN_AI_ON.png", fig: "Fig 4-25",  title: "Maximum Mass to Hover 30 Min, 80 ft Wheel Height (AI ON, ECS OFF)" },
+    tv:   { src: "images/TV_AI_ON.png",   fig: "Figure 4-70", commonName: "TV AI ON",   title: "OEI Ambient Condition Chart for Manoeuvres Following an Engine Failure in the Hover (AI ON, ECS OFF/AUTO OFF)" },
+    hoge: { src: "images/HOGE_AI_ON.png", fig: "Figure 4-54", commonName: "HOGE AI ON", title: "AEO Torque Required to Hover, 80 ft Wheel Height, 0% Thrust Margin (AI ON, ECS Independent)" },
+    hldf: { src: "images/HLDF_AI_ON.png", fig: "Figure 4-71", commonName: "HLDF AI ON", title: "OEI Height Loss for a Flyaway Manoeuvre and Minimum Height for a Forward Reject Manoeuvre (AI ON, ECS OFF/AUTO OFF)" },
+    sr:   { src: "images/SR_AI_ON.png",   fig: "Figure 4-72", commonName: "SR AI ON",   title: "OEI Maximum Height for a Vertical Reject Manoeuvre (AI ON, ECS OFF/AUTO OFF)" },
+    hovMaxMass:      { src: "images/MAX_MASS_TO_HOV_AI_ON.png",       fig: "Figure 4-27", commonName: "Max Mass Hover AI ON",       title: "AEO Maximum Mass to Hover, 80 ft Wheel Height, Headwind, TM Corrections (AI ON, ECS OFF)" },
+    hovMaxMass30Min: { src: "images/MAX_MASS_TO_HOV_30MIN_AI_ON.png", fig: "Figure 4-25", commonName: "Max Mass Hover 30 Min AI ON", title: "AEO Maximum Mass to Hover 30 Min, 80 ft Wheel Height, Headwind, TM Corrections (AI ON, ECS OFF)" },
   },
 };
 
@@ -2169,7 +2169,7 @@ const CHART_IMAGES = {
 // PA curves: [-1000, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
 const AC = {
   variant: "CH-149-511",
-  version: "1.6.8",
+  version: "1.6.9",
   perf: AC_PERF,
   chartImages: CHART_IMAGES,
 };
