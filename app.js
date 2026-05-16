@@ -3774,13 +3774,12 @@ function checkForUpdate() {
   fetch("./version.json?_=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      console.log("[update check] server:", data.version, "app:", AC.version);
       if (data && data.version && data.version !== AC.version) {
         const banner = document.getElementById("updateBanner");
         if (banner) banner.classList.add("visible");
       }
     })
-    .catch(function (e) { console.warn("[update check] failed:", e); });
+    .catch(function () { /* no connectivity or file missing — silent fail */ });
 }
 
 // Live-update the reading age display every 30 seconds
