@@ -2131,10 +2131,10 @@ const CHART_IMAGES = {
   shared: {
     da:    { src: "images/DA_Conversion.png",           fig: "DA Conversion",  title: "Pressure Altitude to Density Altitude Conversion" },
     annexB:{ src: "images/Annex_B.png",                fig: "Annex B",        title: "Engine Power Available OEI (%Q)" },
-    pa13Low:  { src: "images/PWR_ASSURANCE_1and3_1000PA.png",  fig: "PA Fig 1&3 Low", title: "Power Assurance — Engines 1 & 3 (-1000 to +1000 ft)" },
-    pa2Low:   { src: "images/PWR_ASSURANCE_2_1000PA.png",       fig: "PA Fig 2 Low",   title: "Power Assurance — Engine 2 (-1000 to +1000 ft)" },
-    pa13Mid:  { src: "images/PWR_ASSURANCE_1and3_2k4kPA.png",  fig: "PA Fig 1&3 Mid", title: "Power Assurance — Engines 1 & 3 (2000 to 4000 ft)" },
-    pa2Mid:   { src: "images/PWR_ASSURANCE_2_2k4kPA.png",       fig: "PA Fig 2 Mid",   title: "Power Assurance — Engine 2 (2000 to 4000 ft)" },
+    pa13Low:  { src: "images/PWR_ASSURANCE_1and3_1000PA.png",  fig: "Fig - 2",   title: "T700/T6A1 Ground and In-Flight Checks (No 1 / No 3 Engines) - Altitude Band: -1000 ft to 1000 ft" },
+    pa2Low:   { src: "images/PWR_ASSURANCE_2_1000PA.png",       fig: "Fig - 3",   title: "T700/T6A1 Ground and In-Flight Checks (No 2 Engine) - Altitude Band: -1000 ft to 1000 ft" },
+    pa13Mid:  { src: "images/PWR_ASSURANCE_1and3_2k4kPA.png",  fig: "Fig 4-11",  title: "T700/T6A1 Ground and In-Flight Checks (Number 1/Number 3 Engine) - Altitude Band: 2000 ft to 4000 ft" },
+    pa2Mid:   { src: "images/PWR_ASSURANCE_2_2k4kPA.png",       fig: "Fig 4-12",  title: "T700/T6A1 Ground and In-Flight Checks (Number 2 Engine) - Altitude Band: 2000 ft to 4000 ft" },
   },
 
   // AI OFF charts
@@ -2169,7 +2169,7 @@ const CHART_IMAGES = {
 // PA curves: [-1000, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
 const AC = {
   variant: "CH-149-511",
-  version: "1.6.3",
+  version: "1.6.6",
   perf: AC_PERF,
   chartImages: CHART_IMAGES,
 };

@@ -1160,7 +1160,7 @@ function renderSARCheckHOGE() {
     if (hogeValue === null) {
       sourceLbl.textContent = "";
     } else if (hogeSource === "chart") {
-      sourceLbl.textContent = "Derived from FM chart";
+      sourceLbl.textContent = "Derived from AFM chart";
     } else {
       sourceLbl.textContent = "Entered from aircraft computer";
     }
