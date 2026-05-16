@@ -3771,16 +3771,16 @@ if (document.readyState === "loading") {
 // Version check — fetches version.json from server and shows banner if newer than cached app
 function checkForUpdate() {
   if (typeof AC === "undefined" || !AC.version) return;
-  if (!navigator.onLine) return;
   fetch("./version.json?_=" + Date.now(), { cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (data) {
+      console.log("[update check] server:", data.version, "app:", AC.version);
       if (data && data.version && data.version !== AC.version) {
         const banner = document.getElementById("updateBanner");
         if (banner) banner.classList.add("visible");
       }
     })
-    .catch(function () { /* no connectivity or file missing — silent fail */ });
+    .catch(function (e) { console.warn("[update check] failed:", e); });
 }
 
 // Live-update the reading age display every 30 seconds

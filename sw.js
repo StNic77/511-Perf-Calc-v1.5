@@ -11,7 +11,6 @@ const ASSETS = [
   './config.js',
   './styles.css',
   './manifest.json',
-  './version.json',
   './images/SPLASH_PG_SSN.png',
   './images/Annex_B.png',
   './images/DA_Conversion.png',
@@ -56,9 +55,16 @@ self.addEventListener('activate', event => {
 });
 
 // Fetch: cache-first, fall back to network
+// version.json always goes direct to network so update checks are never served stale
 self.addEventListener('fetch', event => {
   // Only handle GET requests for our own origin
   if (event.request.method !== 'GET') return;
+
+  // version.json — always network, never cache
+  if (event.request.url.endsWith('version.json') || event.request.url.includes('version.json?')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request)
