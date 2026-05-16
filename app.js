@@ -1464,35 +1464,20 @@ function openChartViewer(imgEntry, traceFn) {
     traceBtn.textContent = "Show Trace";
     traceBtn.classList.remove("btn--active");
 
-    // Build canvas once img dimensions are known.
-    // Canvas pixel dimensions = image rendered CSS size x devicePixelRatio.
-    // Canvas CSS dimensions   = image rendered CSS size (exact match to img).
-    // This gives sharp lines on Retina/high-DPI screens (iPhone, iPad, Android)
-    // and correct alignment on all screen sizes since canvas covers the image exactly.
-    // sx/sy in all draw functions (CW/imgW, CH/imgH) automatically give the right scale.
+    // Build canvas once img dimensions are known
     function buildCanvas() {
       if (canvas) canvas.remove();
-      const dpr = window.devicePixelRatio || 1;
-      // requestAnimationFrame ensures layout is settled so offsetWidth/Height are correct.
-      requestAnimationFrame(() => {
-        const iw = img.offsetWidth  || img.naturalWidth;
-        const ih = img.offsetHeight || img.naturalHeight;
-        canvas = document.createElement("canvas");
-        canvas.width  = Math.round(iw * dpr);
-        canvas.height = Math.round(ih * dpr);
-        canvas.className = "chart-viewer__trace-canvas";
-        canvas.style.cssText = `position:absolute;top:0;left:0;width:${iw}px;height:${ih}px;pointer-events:none;`;
-        imgWrap.appendChild(canvas);
-        if (traceOn) traceFn(canvas);
-      });
+      canvas = document.createElement("canvas");
+      canvas.width  = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.className = "chart-viewer__trace-canvas";
+      canvas.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;";
+      imgWrap.appendChild(canvas);
+      if (traceOn) traceFn(canvas);
     }
 
     if (img.complete && img.naturalWidth) buildCanvas();
     else img.addEventListener("load", buildCanvas);
-
-    // Rebuild on orientation change / window resize so canvas stays matched to image.
-    const _resizeObs = new ResizeObserver(() => { if (img.naturalWidth) buildCanvas(); });
-    _resizeObs.observe(img);
 
     traceBtn.onclick = () => {
       traceOn = !traceOn;
