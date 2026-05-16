@@ -1456,7 +1456,7 @@ function openChartViewer(imgEntry, traceFn) {
   imgWrap.appendChild(img);
 
   if (caption) caption.textContent = imgEntry.fig
-    ? `${imgEntry.fig} — ${imgEntry.title}`
+    ? `${imgEntry.commonName ? imgEntry.commonName + "  " : ""}${imgEntry.fig} — ${imgEntry.title}`
     : (imgEntry.title || "");
 
   if (traceFn) {
@@ -1544,7 +1544,7 @@ function buildChartDetails(imgEntry) {
   const summary = el("summary", {},
     el("span", { class: "chart-ref__label" },
       document.createTextNode(imgEntry.title),
-      el("span", { class: "chart-ref__fig" }, imgEntry.fig),
+      imgEntry.commonName ? el("span", { class: "chart-ref__fig" }, imgEntry.commonName + "  " + imgEntry.fig) : el("span", { class: "chart-ref__fig" }, imgEntry.fig),
     ),
     chevron,
   );
@@ -1564,7 +1564,7 @@ function buildChartDetails(imgEntry) {
   );
 
   const caption = el("p", { class: "chart-ref__caption" },
-    `${imgEntry.fig} — ${imgEntry.title}`
+    `${imgEntry.commonName ? imgEntry.commonName + "  " : ""}${imgEntry.fig} — ${imgEntry.title}`
   );
 
   const body = el("div", { class: "chart-ref__body" }, thumb, tapHint, caption);
@@ -2424,7 +2424,7 @@ function buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn) {
   const summary = el("summary", {},
     el("span", { class: "chart-ref__label" },
       document.createTextNode(imgEntry.title),
-      el("span", { class: "chart-ref__fig" }, imgEntry.fig),
+      imgEntry.commonName ? el("span", { class: "chart-ref__fig" }, imgEntry.commonName + "  " + imgEntry.fig) : el("span", { class: "chart-ref__fig" }, imgEntry.fig),
     ),
     chevron,
   );
@@ -2443,7 +2443,7 @@ function buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn) {
   );
 
   const caption = el("p", { class: "chart-ref__caption" },
-    `${imgEntry.fig} — ${imgEntry.title}`
+    `${imgEntry.commonName ? imgEntry.commonName + "  " : ""}${imgEntry.fig} — ${imgEntry.title}`
   );
 
   const summaryNode = (summaryFn && traceFn) ? summaryFn() : null;
