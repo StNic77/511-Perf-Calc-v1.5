@@ -1024,6 +1024,304 @@ function getMaxMassToHover({ pa, oat, wind = 0, tm = 0, antiIce = "OFF", rating 
 }
 
 
+// ---- Climb Performance — Rate of Climb at 75 KIAS -------------------------
+//
+// Two-panel nomogram. All 8 variants share identical compute logic;
+// only the data (upperPanel PA curves, lowerPanel correction lines,
+// refMassKg, xMin/xMax) differs.
+//
+// Procedure (per PERF_APP_DESIGN §Climb):
+//   Step 1 — Upper panel: (PA, OAT) → rawRoC
+//     Enter OAT on Y axis, move right to PA curve, drop vertically.
+//     rawRoC lands on the reference line (refMassKg).
+//
+//   Step 2 — Lower panel: (rawRoC, AUW) → finalRoC
+//     rawRoC enters at the reference line. Find the two bracketing
+//     correction lines by their refRoc values. Follow each line from
+//     refMassKg to actual AUW. Interpolate the two resulting RoC values
+//     by the rawRoC fraction. Direction of travel: up if AUW < refMassKg,
+//     down if AUW > refMassKg — same logic either way.
+//
+//   Step 3 — Out-of-envelope:
+//     Left edge exit (trace crosses xMin before reaching AUW):
+//       { ok:false, reason:"cannot_climb" } — RoD undefined, banner: red
+//     Right edge exit (trace crosses xMax before reaching AUW):
+//       { ok:true, exceedsChart:true } — RoC > xMax, banner: yellow
+//     AUW > maxMassKg:
+//       { ok:false, reason:"auw_above_max" }
+//     OAT outside digitized range for the PA curve:
+//       extrapolationWarning set, computation proceeds with clamped value
+//
+// Returns (success):
+//   { ok:true, finalRoc, rawRoc, exceedsChart, extrapolationWarning }
+// Returns (failure):
+//   { ok:false, reason, ... }
+//
+// Reasons:
+//   "chart_not_digitized"  — variant key missing from AC.perf.climbPerf
+//   "auw_above_max"        — AUW > maxMassKg (above Alt AUW)
+//   "pa_no_curve"          — PA above highest digitized curve
+//   "cannot_climb"         — lower panel trace exits xMin before reaching AUW
+
+function getClimbPerf({ pa, oat, auw, antiIce, rating }) {
+  // rating: "mcp" | "thirtyMin"
+  // engineState: derived from caller — "aeo" | "oei"
+  // Full variant key is passed in as `variantKey` instead.
+  // Signature kept flexible: caller builds the key.
+  // Internal: called with variantKey directly.
+  // This wrapper accepts { pa, oat, auw, antiIce, rating, engineState }.
+  // engineState: "aeo" | "oei"
+  const _args = arguments[0];
+  const engineState = _args.engineState || "aeo";
+  const aiSuffix    = (antiIce === "ON" || antiIce === true) ? "ai_on" : "ai_off";
+  const ratingKey   = (rating === "mcp") ? "mcp" : "30min";
+  const variantKey  = `${engineState}_${ratingKey}_${aiSuffix}`;
+
+  return _climbLookup(variantKey, pa, oat, auw);
+}
+
+// Core lookup — called directly by renderClimb for each of the 4 variants
+// per AI state. Also exported so qa.html can call it directly.
+function _climbLookup(variantKey, pa, oat, auw) {
+  const chart = AC.perf.climbPerf && AC.perf.climbPerf[variantKey];
+  if (!chart) {
+    return { ok: false, reason: "chart_not_digitized", variantKey };
+  }
+
+  const { xMin, xMax, refMassKg, maxMassKg } = chart.lowerPanel
+    ? { xMin: chart.xMin, xMax: chart.xMax,
+        refMassKg: chart.lowerPanel.refMassKg,
+        maxMassKg: chart.lowerPanel.maxMassKg }
+    : {};
+
+  // AUW envelope check
+  if (auw > maxMassKg) {
+    return { ok: false, reason: "auw_above_max", auw, maxMassKg };
+  }
+  const minMass = 10000; // chart drawn from 10,000 kg
+  if (auw < minMass) {
+    return { ok: false, reason: "auw_below_min", auw, minMass };
+  }
+
+  // ---- Step 1: Upper panel — (PA, OAT) → rawRoC --------------------------
+
+  // Build PA axis from upperPanel keys
+  const upper = chart.upperPanel;
+  const paKeys = Object.keys(upper).map(k => {
+    const n = k.replace("PA_neg", "-").replace("PA_", "");
+    return parseInt(n, 10);
+  }).sort((a, b) => a - b);
+
+  if (paKeys.length === 0) {
+    return { ok: false, reason: "pa_no_curve", pa };
+  }
+
+  // Helper: given a PA curve key integer, find the curve array
+  function getCurve(paN) {
+    const key = paN < 0 ? "PA_neg" + Math.abs(paN) : "PA_" + paN;
+    return upper[key] || null;
+  }
+
+  // Helper: interpolate along a PA curve [{oat, roc}] at a given OAT.
+  // Curve is sorted OAT ascending. Returns { roc, clamped }.
+  function interpPACurve(curve, oatIn) {
+    const sorted = [...curve].sort((a, b) => a.oat - b.oat);
+    if (oatIn <= sorted[0].oat) return { roc: sorted[0].roc, clamped: true };
+    if (oatIn >= sorted[sorted.length - 1].oat) return { roc: sorted[sorted.length - 1].roc, clamped: true };
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (oatIn >= sorted[i].oat && oatIn <= sorted[i + 1].oat) {
+        return {
+          roc: interp1(oatIn, sorted[i].oat, sorted[i].roc, sorted[i + 1].oat, sorted[i + 1].roc),
+          clamped: false,
+        };
+      }
+    }
+    return { roc: sorted[sorted.length - 1].roc, clamped: true };
+  }
+
+  // Bracket PA
+  let paLo, paHi;
+  if (pa <= paKeys[0]) {
+    paLo = paHi = paKeys[0];
+  } else if (pa >= paKeys[paKeys.length - 1]) {
+    paLo = paHi = paKeys[paKeys.length - 1];
+  } else {
+    for (let i = 0; i < paKeys.length - 1; i++) {
+      if (paKeys[i] <= pa && pa <= paKeys[i + 1]) {
+        paLo = paKeys[i]; paHi = paKeys[i + 1];
+        break;
+      }
+    }
+  }
+
+  const cLo = getCurve(paLo);
+  const cHi = getCurve(paHi);
+  if (!cLo) return { ok: false, reason: "pa_no_curve", pa };
+
+  // Check OAT against the ISA+25 boundary — the right-side chart boundary
+  // is an ISA deviation line. Every PA curve terminates at ISA+25 (±1°C rounding).
+  // Using the formula is cleaner and more precise than reading digitized endpoints.
+  // ISA lapse rate: 1.98°C per 1000 ft.
+  const isaTemp  = 15.0 - 1.98 * (pa / 1000);
+  const oatMax   = isaTemp + 25;
+  if (oat > oatMax) {
+    return { ok: false, reason: "oat_above_max", oat, oatMax: Math.round(oatMax * 10) / 10 };
+  }
+
+  const rLo = interpPACurve(cLo, oat);
+  let rawRoc, extrapolationWarning = false;
+
+  if (paLo === paHi || !cHi) {
+    rawRoc = rLo.roc;
+    extrapolationWarning = rLo.clamped;
+  } else {
+    const rHi = interpPACurve(cHi, oat);
+    extrapolationWarning = rLo.clamped || rHi.clamped;
+    rawRoc = interp1(pa, paLo, rLo.roc, paHi, rHi.roc);
+  }
+
+  // ---- Step 1b: Right-side boundary check (AI OFF charts only) -------------
+  // rightBoundary is a single [{oat, roc}] curve tracing the right edge of the
+  // chart — the locus where each PA curve terminates. Interpolate along it at
+  // the entered OAT to get the boundary RoC cap. Apply whenever rawRoC exceeds
+  // it — covers both warm-of-boundary conditions and cold-end clamping overshoot.
+  if (Array.isArray(chart.rightBoundary) && chart.rightBoundary.length >= 2) {
+    const bpts = [...chart.rightBoundary].sort((a, b) => a.oat - b.oat);
+    let boundaryRoc;
+    if (oat <= bpts[0].oat) {
+      boundaryRoc = bpts[0].roc;
+    } else if (oat >= bpts[bpts.length - 1].oat) {
+      boundaryRoc = bpts[bpts.length - 1].roc;
+    } else {
+      for (let i = 0; i < bpts.length - 1; i++) {
+        if (bpts[i].oat <= oat && oat <= bpts[i + 1].oat) {
+          boundaryRoc = interp1(oat, bpts[i].oat, bpts[i].roc, bpts[i + 1].oat, bpts[i + 1].roc);
+          break;
+        }
+      }
+    }
+    if (boundaryRoc !== undefined && rawRoc > boundaryRoc) {
+      rawRoc = boundaryRoc;
+      extrapolationWarning = true;
+    }
+  }
+
+  // ---- Step 2: Lower panel — (rawRoC, AUW) → finalRoC --------------------
+
+  const lines = chart.lowerPanel.lines;
+
+  // Sort lines by refRoc ascending
+  const sortedLines = [...lines].sort((a, b) => a.refRoc - b.refRoc);
+  const refRocs = sortedLines.map(l => l.refRoc);
+
+  // Helper: interpolate along a correction line [{mass, roc}] at AUW.
+  // Returns { roc, exitedLeft } where exitedLeft=true means the line ran out
+  // of data before reaching AUW (the line exited the chart left boundary).
+  function interpLine(line, auwIn) {
+    const pts = [...line.points].sort((a, b) => a.mass - b.mass);
+    if (auwIn <= pts[0].mass) return { roc: pts[0].roc, exitedLeft: false };
+    if (auwIn > pts[pts.length - 1].mass) {
+      // AUW is heavier than the last digitized point — the correction line
+      // exited the chart before reaching this mass. Signal as exitedLeft.
+      return { roc: pts[pts.length - 1].roc, exitedLeft: true };
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (auwIn >= pts[i].mass && auwIn <= pts[i + 1].mass) {
+        return { roc: interp1(auwIn, pts[i].mass, pts[i].roc, pts[i + 1].mass, pts[i + 1].roc), exitedLeft: false };
+      }
+    }
+    return { roc: pts[pts.length - 1].roc, exitedLeft: true };
+  }
+
+  // Bracket rawRoC between correction lines.
+  // rawRoC outside the correction line range means the trace would exit the
+  // chart boundary before reaching AUW — return out-of-envelope immediately.
+  // The correction line range IS the valid domain; do not extrapolate beyond it.
+  if (rawRoc < refRocs[0]) {
+    return {
+      ok: false,
+      reason: "cannot_climb",
+      rawRoc: Math.round(rawRoc),
+      finalRoc: null,
+      xMin,
+    };
+  }
+  if (rawRoc > refRocs[refRocs.length - 1]) {
+    return {
+      ok: true,
+      exceedsChart: true,
+      finalRoc: null,
+      rawRoc: Math.round(rawRoc),
+      xMax,
+      extrapolationWarning,
+    };
+  }
+
+  let lineLoIdx, lineHiIdx;
+  for (let i = 0; i < refRocs.length - 1; i++) {
+    if (refRocs[i] <= rawRoc && rawRoc <= refRocs[i + 1]) {
+      lineLoIdx = i; lineHiIdx = i + 1;
+      break;
+    }
+  }
+
+  const lineLo = sortedLines[lineLoIdx];
+  const lineHi = sortedLines[lineHiIdx];
+
+  const resLo = interpLine(lineLo, auw);
+  const resHi = interpLine(lineHi, auw);
+
+  // If either bracketing line ran out before reaching AUW, the correction
+  // line exited the left chart boundary — the aircraft cannot sustain climb.
+  if (resLo.exitedLeft || resHi.exitedLeft) {
+    return {
+      ok: false,
+      reason: "cannot_climb",
+      rawRoc: Math.round(rawRoc),
+      finalRoc: null,
+      xMin,
+    };
+  }
+
+  const rocAtAuwLo = resLo.roc;
+  const rocAtAuwHi = resHi.roc;
+  const finalRoc   = interp1(rawRoc, refRocs[lineLoIdx], rocAtAuwLo, refRocs[lineHiIdx], rocAtAuwHi);
+
+  // ---- Step 3: Out-of-envelope checks ------------------------------------
+
+  // Left edge: cannot maintain any climb (or rate of descent undefined)
+  if (finalRoc < xMin) {
+    return {
+      ok: false,
+      reason: "cannot_climb",
+      rawRoc: Math.round(rawRoc),
+      finalRoc: null,
+      xMin,
+    };
+  }
+
+  // Right edge: RoC exceeds chart boundary
+  if (finalRoc > xMax) {
+    return {
+      ok: true,
+      exceedsChart: true,
+      finalRoc: null,
+      rawRoc: Math.round(rawRoc),
+      xMax,
+      extrapolationWarning,
+    };
+  }
+
+  return {
+    ok: true,
+    exceedsChart: false,
+    finalRoc: Math.round(finalRoc),
+    rawRoc: Math.round(rawRoc),
+    extrapolationWarning,
+  };
+}
+
+
 if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
   module.exports = {
     interp1,
@@ -1048,6 +1346,7 @@ if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
     getSafeReject,
     evaluateSAROEISafety,
   getMaxMassToHover,
+  getClimbPerf,
   };
 }
 // ---- Annex B — Power Assurance %Q Reference --------------------------------

@@ -2107,6 +2107,10 @@ const AC_PERF = {
     maxAum: HOV_MAX_AUM,  // 14 600 kg — standard maximum
     altAum: HOV_ALT_AUM,  // 15 600 kg — alternate, absolute ceiling
   },
+
+  // Climb Performance — Rate of Climb at 75 KIAS.
+  // 8 variants: AEO/OEI × MCP/30Min × AI OFF/ON. Digitized May 2026.
+  climbPerf: null, // populated below after AC_CLIMB_PERF is declared
 };
 
 // ---- FM Chart image references ---------------------------------------------
@@ -2156,6 +2160,18 @@ const CHART_IMAGES = {
     hovMaxMass:      { src: "images/MAX_MASS_TO_HOV_AI_ON.png",       fig: "Figure 4-27", commonName: "Max Mass Hover AI ON",       title: "AEO Maximum Mass to Hover, 80 ft Wheel Height, Headwind, TM Corrections (AI ON, ECS OFF)" },
     hovMaxMass30Min: { src: "images/MAX_MASS_TO_HOV_30MIN_AI_ON.png", fig: "Figure 4-25", commonName: "Max Mass Hover 30 Min AI ON", title: "AEO Maximum Mass to Hover 30 Min, 80 ft Wheel Height, Headwind, TM Corrections (AI ON, ECS OFF)" },
   },
+
+  // Climb Performance charts — keyed by variant name matching AC.perf.climbPerf
+  climb: {
+    aeo_30min_ai_off: { src: "images/FIG_4_77_AEO_ROC_30MIN_AI_OFF.png", fig: "Fig 4-77", title: "AEO Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF) — 30 Min" },
+    aeo_mcp_ai_off:   { src: "images/FIG_4_79_AEO_ROC_MCP_AI_OFF.png",   fig: "Fig 4-79", title: "AEO Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF) — MCP" },
+    aeo_30min_ai_on:  { src: "images/FIG_4_80_AEO_ROC_30MIN_AI_ON.png",  fig: "Fig 4-80", title: "AEO Rate of Climb at Recommended Climb Speed 75 KIAS (AI ON/ECS ON) — 30 Min" },
+    aeo_mcp_ai_on:    { src: "images/FIG_4_82_AEO_ROC_MCP_AI_ON.png",    fig: "Fig 4-82", title: "AEO Rate of Climb at Recommended Climb Speed 75 KIAS (AI ON/ECS ON) — MCP" },
+    oei_30min_ai_off: { src: "images/FIG_4_84_OEI_ROC_30MIN_AI_OFF.png", fig: "Fig 4-84", title: "OEI Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF) — 30 Min" },
+    oei_mcp_ai_off:   { src: "images/FIG_4_85_OEI_ROC_MCP_AI_OFF.png",   fig: "Fig 4-85", title: "OEI Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF) — MCP" },
+    oei_30min_ai_on:  { src: "images/FIG_4_87_OEI_ROC_30MIN_AI_ON.png",  fig: "Fig 4-87", title: "OEI Rate of Climb at Recommended Climb Speed 75 KIAS (AI ON/ECS ON) — 30 Min" },
+    oei_mcp_ai_on:    { src: "images/FIG_4_88_OEI_ROC_MCP_AI_ON.png",    fig: "Fig 4-88", title: "OEI Rate of Climb at Recommended Climb Speed 75 KIAS (AI ON/ECS ON) — MCP" },
+  },
 };
 
 
@@ -2167,12 +2183,396 @@ const CHART_IMAGES = {
 // ---- Transfer Value (AI ON) — Fig 4-70 ------------------------------------
 // Single panel. X = Transfer Value (direct). Y = OAT °C (direct).
 // PA curves: [-1000, 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
+// ============================================================
+// CLIMB PERFORMANCE DATA — climbPerf
+// Rate of Climb at 75 KIAS
+// 8 chart variants: AEO/OEI × MCP/30Min × AI OFF/ON
+// Schema: upperPanel = PA curves [{oat, roc}]
+//         lowerPanel = correction lines [{refRoc, points:[{mass,roc}]}]
+// refRoc: RoC value where correction line crosses the reference line
+// All values in real units: RoC ft/min, OAT °C, mass kg
+// ============================================================
+
+const AC_CLIMB_PERF = {
+  // --------------------------------------------------------
+  // Fig 4-77 — AEO 30 Min AI OFF/ECS OFF
+  // image: images/FIG_4_77_AEO_ROC_30MIN_AI_OFF.png
+  // X axis: 0 to 3200 ft/min
+  // ref_mass: 13000 kg | max_mass: 15600 kg | OAT top: 45°C
+  aeo_30min_ai_off: {
+    chartRef: "Fig 4-77",
+    image: "images/FIG_4_77_AEO_ROC_30MIN_AI_OFF.png",
+    xMin: 0,
+    xMax: 3200,
+    oatMax: 45,
+    rightBoundary: [
+      {oat:35, roc:2510},
+      {oat:32, roc:2510},
+      {oat:27, roc:2510},
+      {oat:22, roc:2510},
+      {oat:17, roc:2510},
+      {oat:11, roc:2510},
+      {oat: 4, roc:2500},
+      {oat:-4, roc:2490},
+      {oat:-14, roc:2480},
+      {oat:-24, roc:2480},
+      {oat:-37, roc:2460},
+    ],
+    upperPanel: {
+      PA_neg1000: [{oat:35.7, roc:2509}, {oat:40.6, roc:2314}],
+      PA_0: [{oat:31.9, roc:2507}, {oat:40.8, roc:2178}],
+      PA_1000: [{oat:27.4, roc:2507}, {oat:30.5, roc:2401}, {oat:38.7, roc:2095}],
+      PA_2000: [{oat:22.8, roc:2507}, {oat:30.6, roc:2240}, {oat:36.7, roc:2009}],
+      PA_3000: [{oat:17.2, roc:2509}, {oat:20.3, roc:2424}, {oat:30.5, roc:2080}, {oat:34.9, roc:1926}],
+      PA_4000: [{oat:11.4, roc:2506}, {oat:20.3, roc:2261}, {oat:30.5, roc:1920}, {oat:32.6, roc:1842}],
+      PA_5000: [{oat:3.9, roc:2504}, {oat:10.1, roc:2374}, {oat:20.3, roc:2099}, {oat:30.5, roc:1739}],
+      PA_6000: [{oat:-4.9, roc:2495}, {oat:-0.1, roc:2415}, {oat:10.1, roc:2212}, {oat:20.3, roc:1922}, {oat:28.5, roc:1631}],
+      PA_7000: [{oat:-15.1, roc:2486}, {oat:-10.3, roc:2423}, {oat:-0.1, roc:2257}, {oat:10.1, roc:2046}, {oat:20.3, roc:1736}, {oat:26.6, roc:1510}],
+      PA_8000: [{oat:-25.3, roc:2475}, {oat:-20.5, roc:2412}, {oat:-10.2, roc:2261}, {oat:-0.1, roc:2086}, {oat:10.1, roc:1854}, {oat:20.4, roc:1535}, {oat:24.7, roc:1373}],
+      PA_9000: [{oat:-37.6, roc:2456}, {oat:-30.8, roc:2384}, {oat:-20.5, roc:2249}, {oat:-10.3, roc:2086}, {oat:-0.1, roc:1902}, {oat:10.1, roc:1661}, {oat:20.4, roc:1323}, {oat:22.7, roc:1237}],
+      PA_10000: [{oat:-45.6, roc:2360}, {oat:-40.9, roc:2338}, {oat:-30.7, roc:2217}, {oat:-20.5, roc:2072}, {oat:-10.3, roc:1897}, {oat:-0.1, roc:1705}, {oat:10.2, roc:1441}, {oat:20.4, roc:1086}]
+    },
+    lowerPanel: {
+      refMassKg: 13000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: 800,  points: [{mass:10000, roc:1800}, {mass:10500, roc:1641}, {mass:11000, roc:1490}, {mass:11500, roc:1333}, {mass:12000, roc:1166}, {mass:12500, roc:1000}, {mass:13000, roc:800},  {mass:13500, roc:560},  {mass:14000, roc:240},  {mass:14350, roc:0}]},
+        {refRoc: 1200, points: [{mass:10000, roc:2120}, {mass:10500, roc:1959}, {mass:11000, roc:1808}, {mass:11500, roc:1659}, {mass:12000, roc:1510}, {mass:12500, roc:1366}, {mass:13000, roc:1200}, {mass:13500, roc:960},  {mass:14000, roc:700},  {mass:14500, roc:460},  {mass:15000, roc:160},  {mass:15300, roc:0}]},
+        {refRoc: 1600, points: [{mass:10000, roc:2460}, {mass:10500, roc:2309}, {mass:11000, roc:2158}, {mass:11500, roc:2008}, {mass:12000, roc:1857}, {mass:12500, roc:1736}, {mass:13000, roc:1600}, {mass:13500, roc:1400}, {mass:14000, roc:1200}, {mass:14500, roc:960},  {mass:15000, roc:740},  {mass:15500, roc:520},  {mass:15600, roc:480}]},
+        {refRoc: 2000, points: [{mass:10000, roc:2840}, {mass:10500, roc:2679}, {mass:11000, roc:2538}, {mass:11500, roc:2400}, {mass:12000, roc:2257}, {mass:12500, roc:2132}, {mass:13000, roc:2000}, {mass:13500, roc:1840}, {mass:14000, roc:1640}, {mass:14500, roc:1460}, {mass:15000, roc:1280}, {mass:15500, roc:1080}, {mass:15600, roc:1020}]},
+        {refRoc: 2400, points: [{mass:10000, roc:3170}, {mass:10500, roc:3040}, {mass:11000, roc:2899}, {mass:11500, roc:2759}, {mass:12000, roc:2624}, {mass:12500, roc:2513}, {mass:13000, roc:2400}, {mass:13500, roc:2240}, {mass:14000, roc:2080}, {mass:14500, roc:1920}, {mass:15000, roc:1760}, {mass:15500, roc:1600}, {mass:15600, roc:1560}]},
+        {refRoc: 2600, points: [{mass:10450, roc:3200}, {mass:10500, roc:3190}, {mass:11000, roc:3060}, {mass:11500, roc:2940}, {mass:12000, roc:2820}, {mass:12500, roc:2710}, {mass:13000, roc:2600}, {mass:13500, roc:2440}, {mass:14000, roc:2290}, {mass:14500, roc:2140}, {mass:15000, roc:1980}, {mass:15500, roc:1840}, {mass:15600, roc:1800}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-79 — AEO MCP AI OFF/ECS OFF
+  // image: images/FIG_4_79_AEO_ROC_MCP_AI_OFF.png
+  // X axis: 0 to 3200 ft/min
+  // ref_mass: 13000 kg | max_mass: 15600 kg | OAT top: 45°C
+  aeo_mcp_ai_off: {
+    chartRef: "Fig 4-79",
+    image: "images/FIG_4_79_AEO_ROC_MCP_AI_OFF.png",
+    xMin: 0,
+    xMax: 3200,
+    oatMax: 45,
+    rightBoundary: [
+      {oat:26, roc:2290},
+      {oat:22, roc:2290},
+      {oat:18, roc:2290},
+      {oat:14, roc:2290},
+      {oat: 9, roc:2290},
+      {oat: 4, roc:2280},
+      {oat:-1, roc:2280},
+      {oat:-8, roc:2280},
+      {oat:-16, roc:2270},
+      {oat:-25, roc:2260},
+      {oat:-36, roc:2240},
+    ],
+    upperPanel: {
+      PA_neg1000: [{oat:25.7, roc:2286}, {oat:30.2, roc:2103}, {oat:40.4, roc:1657}],
+      PA_0: [{oat:22.1, roc:2289}, {oat:30.2, roc:1976}, {oat:40.4, roc:1519}],
+      PA_1000: [{oat:18.1, roc:2286}, {oat:20.2, roc:2230}, {oat:30.2, roc:1803}, {oat:38.3, roc:1456}],
+      PA_2000: [{oat:13.7, roc:2288}, {oat:20.2, roc:2068}, {oat:30.2, roc:1648}, {oat:36.5, roc:1379}],
+      PA_3000: [{oat:8.9, roc:2288}, {oat:10.0, roc:2258}, {oat:20.2, roc:1913}, {oat:30.3, roc:1493}, {oat:34.3, roc:1320}],
+      PA_4000: [{oat:4.0, roc:2286}, {oat:10.0, roc:2103}, {oat:20.2, roc:1762}, {oat:30.2, roc:1342}, {oat:32.5, roc:1250}],
+      PA_5000: [{oat:-1.6, roc:2282}, {oat:-0.1, roc:2245}, {oat:10.0, roc:1947}, {oat:20.2, roc:1598}, {oat:30.6, roc:1167}],
+      PA_6000: [{oat:-8.5, roc:2275}, {oat:-0.1, roc:2101}, {oat:10.0, roc:1777}, {oat:20.2, roc:1429}, {oat:28.3, roc:1078}],
+      PA_7000: [{oat:-16.7, roc:2267}, {oat:-10.1, roc:2157}, {oat:-0.1, roc:1937}, {oat:10.1, roc:1615}, {oat:20.2, roc:1242}, {oat:26.5, roc:975}],
+      PA_8000: [{oat:-25.2, roc:2254}, {oat:-20.2, roc:2177}, {oat:-10.1, roc:1996}, {oat:-0.1, roc:1766}, {oat:10.1, roc:1427}, {oat:20.2, roc:1049}, {oat:24.4, roc:855}],
+      PA_9000: [{oat:-36.4, roc:2238}, {oat:-30.3, roc:2162}, {oat:-20.2, roc:2007}, {oat:-10.0, roc:1829}, {oat:0.0, roc:1582}, {oat:10.1, roc:1226}, {oat:20.2, roc:833}, {oat:22.4, roc:737}],
+      PA_10000: [{oat:-45.2, roc:2173}, {oat:-40.4, roc:2127}, {oat:-30.3, roc:2000}, {oat:-20.2, roc:1836}, {oat:-10.0, roc:1635}, {oat:-0.1, roc:1384}, {oat:10.1, roc:1006}, {oat:20.2, roc:597}]
+    },
+    lowerPanel: {
+      refMassKg: 13000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: 400, points: [{mass:10000, roc:1240}, {mass:10500, roc:1086}, {mass:11000, roc:949}, {mass:11500, roc:842}, {mass:12000, roc:728}, {mass:12500, roc:571}, {mass:13000, roc:400}, {mass:13500, roc:200}, {mass:14000, roc:0}]},
+        {refRoc: 800, points: [{mass:10000, roc:1600}, {mass:10500, roc:1454}, {mass:11000, roc:1320}, {mass:11500, roc:1200}, {mass:12000, roc:1078}, {mass:12500, roc:947}, {mass:13000, roc:800}, {mass:13500, roc:600}, {mass:14000, roc:400}, {mass:14500, roc:200}, {mass:15000, roc:0}]},
+        {refRoc: 1200, points: [{mass:10000, roc:2000}, {mass:10500, roc:1841}, {mass:11000, roc:1701}, {mass:11500, roc:1565}, {mass:12000, roc:1441}, {mass:12500, roc:1325}, {mass:13000, roc:1200}, {mass:13500, roc:1020}, {mass:14000, roc:820}, {mass:14500, roc:600}, {mass:15000, roc:360}, {mass:15500, roc:120}, {mass:15600, roc:80}]},
+        {refRoc: 1600, points: [{mass:10000, roc:2420}, {mass:10500, roc:2273}, {mass:11000, roc:2127}, {mass:11500, roc:1983}, {mass:12000, roc:1849}, {mass:12500, roc:1725}, {mass:13000, roc:1600}, {mass:13500, roc:1440}, {mass:14000, roc:1240}, {mass:14500, roc:1050}, {mass:15000, roc:860}, {mass:15500, roc:640}, {mass:15600, roc:600}]},
+        {refRoc: 2000, points: [{mass:10000, roc:2800}, {mass:10500, roc:2653}, {mass:11000, roc:2518}, {mass:11500, roc:2383}, {mass:12000, roc:2258}, {mass:12500, roc:2133}, {mass:13000, roc:2000}, {mass:13500, roc:1840}, {mass:14000, roc:1680}, {mass:14500, roc:1500}, {mass:15000, roc:1340}, {mass:15500, roc:1160}, {mass:15600, roc:1100}]},
+        {refRoc: 2400, points: [{mass:10000, roc:3080}, {mass:10500, roc:2960}, {mass:11000, roc:2840}, {mass:11500, roc:2700}, {mass:12000, roc:2600}, {mass:12500, roc:2500}, {mass:13000, roc:2400}, {mass:13500, roc:2260}, {mass:14000, roc:2100}, {mass:14500, roc:1940}, {mass:15000, roc:1760}, {mass:15500, roc:1580}, {mass:15600, roc:1520}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-80 — AEO 30 Min AI ON/ECS ON
+  // image: images/FIG_4_80_AEO_ROC_30MIN_AI_ON.png
+  // X axis: 0 to 3200 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  aeo_30min_ai_on: {
+    chartRef: "Fig 4-80",
+    image: "images/FIG_4_80_AEO_ROC_30MIN_AI_ON.png",
+    xMin: 0,
+    xMax: 3200,
+    oatMax: 40,
+    upperPanel: {
+      PA_neg1000: [{oat:-45.0, roc:2850}, {oat:-40.0, roc:2871}, {oat:-30.0, roc:2895}, {oat:-20.1, roc:2918}, {oat:-10.1, roc:2936}, {oat:-0.1, roc:2951}, {oat:9.9, roc:2964}, {oat:19.9, roc:2916}, {oat:30.0, roc:2465}, {oat:39.9, roc:1969}],
+      PA_0: [{oat:-44.9, roc:2852}, {oat:-40.0, roc:2871}, {oat:-30.0, roc:2895}, {oat:-20.1, roc:2918}, {oat:-10.1, roc:2937}, {oat:-0.1, roc:2953}, {oat:10.0, roc:2964}, {oat:20.0, roc:2741}, {oat:30.0, roc:2291}, {oat:40.0, roc:1779}],
+      PA_1000: [{oat:-44.8, roc:2852}, {oat:-40.0, roc:2873}, {oat:-30.0, roc:2895}, {oat:-20.1, roc:2916}, {oat:-10.1, roc:2937}, {oat:-0.1, roc:2953}, {oat:10.0, roc:2923}, {oat:20.0, roc:2570}, {oat:30.0, roc:2118}, {oat:38.1, roc:1696}],
+      PA_2000: [{oat:-44.8, roc:2850}, {oat:-39.8, roc:2873}, {oat:-30.0, roc:2895}, {oat:-20.1, roc:2916}, {oat:-10.1, roc:2937}, {oat:-0.1, roc:2953}, {oat:10.0, roc:2759}, {oat:20.0, roc:2389}, {oat:30.0, roc:1924}, {oat:36.1, roc:1600}],
+      PA_3000: [{oat:-44.9, roc:2852}, {oat:-39.8, roc:2867}, {oat:-30.0, roc:2890}, {oat:-20.1, roc:2915}, {oat:-10.1, roc:2937}, {oat:-0.0, roc:2857}, {oat:10.0, roc:2587}, {oat:20.0, roc:2200}, {oat:30.0, roc:1740}, {oat:34.0, roc:1530}],
+      PA_4000: [{oat:-44.7, roc:2811}, {oat:-40.0, roc:2834}, {oat:-30.0, roc:2878}, {oat:-20.1, roc:2904}, {oat:-10.1, roc:2899}, {oat:-0.0, roc:2678}, {oat:10.0, roc:2404}, {oat:20.0, roc:2006}, {oat:30.0, roc:1540}, {oat:32.2, roc:1439}],
+      PA_5000: [{oat:-45.1, roc:2678}, {oat:-40.1, roc:2706}, {oat:-30.0, roc:2747}, {oat:-20.1, roc:2769}, {oat:-10.1, roc:2731}, {oat:-0.0, roc:2502}, {oat:10.0, roc:2214}, {oat:20.0, roc:1817}, {oat:30.0, roc:1341}],
+      PA_6000: [{oat:-44.6, roc:2556}, {oat:-40.1, roc:2573}, {oat:-30.0, roc:2605}, {oat:-20.1, roc:2629}, {oat:-10.1, roc:2552}, {oat:-0.0, roc:2318}, {oat:9.9, roc:2022}, {oat:20.0, roc:1621}, {oat:28.2, roc:1245}],
+      PA_7000: [{oat:-44.5, roc:2430}, {oat:-40.1, roc:2444}, {oat:-30.0, roc:2472}, {oat:-20.1, roc:2493}, {oat:-10.1, roc:2370}, {oat:0.2, roc:2125}, {oat:10.0, roc:1824}, {oat:19.9, roc:1432}, {oat:26.1, roc:1155}],
+      PA_8000: [{oat:-44.5, roc:2288}, {oat:-40.1, roc:2302}, {oat:-30.0, roc:2328}, {oat:-20.1, roc:2346}, {oat:-10.0, roc:2188}, {oat:-0.0, roc:1938}, {oat:10.0, roc:1625}, {oat:20.0, roc:1231}, {oat:24.1, roc:1040}],
+      PA_9000: [{oat:-44.9, roc:2148}, {oat:-40.1, roc:2160}, {oat:-30.0, roc:2185}, {oat:-20.1, roc:2206}, {oat:-10.1, roc:1999}, {oat:-0.0, roc:1754}, {oat:10.0, roc:1428}, {oat:20.0, roc:1024}, {oat:22.2, roc:924}],
+      PA_10000: [{oat:-44.9, roc:1999}, {oat:-40.1, roc:2015}, {oat:-30.0, roc:2038}, {oat:-20.1, roc:2055}, {oat:-10.1, roc:1812}, {oat:-0.0, roc:1563}, {oat:10.1, roc:1220}, {oat:20.0, roc:798}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: 800, points: [{mass:10001, roc:1042}, {mass:10501, roc:944}, {mass:11000, roc:800}, {mass:11503, roc:599}, {mass:12006, roc:380}, {mass:12501, roc:168}, {mass:12895, roc:0}]},
+        {refRoc: 1201, points: [{mass:9998, roc:1460}, {mass:10501, roc:1348}, {mass:10996, roc:1201}, {mass:11499, roc:1008}, {mass:12003, roc:800}, {mass:12502, roc:611}, {mass:13001, roc:413}, {mass:13500, roc:201}, {mass:13946, roc:0}]},
+        {refRoc: 1600, points: [{mass:10003, roc:1875}, {mass:10502, roc:1745}, {mass:10996, roc:1600}, {mass:11500, roc:1423}, {mass:12003, roc:1239}, {mass:12507, roc:1063}, {mass:13001, roc:888}, {mass:13500, roc:707}, {mass:13999, roc:515}, {mass:14503, roc:303}, {mass:15002, roc:77}, {mass:15185, roc:0}]},
+        {refRoc: 2001, points: [{mass:9999, roc:2290}, {mass:10502, roc:2148}, {mass:11001, roc:2001}, {mass:11500, roc:1845}, {mass:12004, roc:1689}, {mass:12503, roc:1523}, {mass:13006, roc:1357}, {mass:13505, roc:1210}, {mass:14004, roc:1057}, {mass:14503, roc:888}, {mass:15002, roc:702}, {mass:15497, roc:499}, {mass:15598, roc:443}]},
+        {refRoc: 2398, points: [{mass:9999, roc:2678}, {mass:10503, roc:2544}, {mass:11002, roc:2398}, {mass:11501, roc:2242}, {mass:12004, roc:2088}, {mass:12503, roc:1955}, {mass:13007, roc:1828}, {mass:13506, roc:1689}, {mass:14009, roc:1546}, {mass:14500, roc:1407}, {mass:15003, roc:1259}, {mass:15502, roc:1091}, {mass:15603, roc:1045}]},
+        {refRoc: 2799, points: [{mass:10000, roc:3070}, {mass:10503, roc:2937}, {mass:10998, roc:2799}, {mass:11501, roc:2650}, {mass:12005, roc:2496}, {mass:12504, roc:2358}, {mass:13007, roc:2223}, {mass:13506, roc:2090}, {mass:14006, roc:1957}, {mass:14500, roc:1835}, {mass:15004, roc:1709}, {mass:15503, roc:1575}, {mass:15608, roc:1546}]},
+        {refRoc: 3000, points: [{mass:10201, roc:3200}, {mass:10499, roc:3132}, {mass:11003, roc:3000}, {mass:11502, roc:2843}, {mass:12005, roc:2687}, {mass:12509, roc:2547}, {mass:13008, roc:2409}, {mass:13507, roc:2274}, {mass:14006, roc:2148}, {mass:14505, roc:2029}, {mass:15004, roc:1908}, {mass:15503, roc:1787}, {mass:15608, roc:1754}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-82 — AEO MCP AI ON/ECS ON
+  // image: images/FIG_4_82_AEO_ROC_MCP_AI_ON.png
+  // X axis: 0 to 3200 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  aeo_mcp_ai_on: {
+    chartRef: "Fig 4-82",
+    image: "images/FIG_4_82_AEO_ROC_MCP_AI_ON.png",
+    xMin: 0,
+    xMax: 3200,
+    oatMax: 40,
+    upperPanel: {
+      PA_neg1000: [{oat:-44.9, roc:2610}, {oat:-40.0, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2680}, {oat:-10.1, roc:2705}, {oat:0.1, roc:2722}, {oat:10.2, roc:2708}, {oat:20.0, roc:2256}, {oat:30.0, roc:1686}, {oat:40.0, roc:1073}],
+      PA_0: [{oat:-45.1, roc:2610}, {oat:-40.2, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2680}, {oat:-10.1, roc:2705}, {oat:-0.1, roc:2719}, {oat:10.1, roc:2540}, {oat:20.0, roc:2088}, {oat:30.0, roc:1514}, {oat:40.0, roc:884}],
+      PA_1000: [{oat:-44.9, roc:2610}, {oat:-40.2, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2684}, {oat:-10.1, roc:2701}, {oat:-0.0, roc:2719}, {oat:10.1, roc:2368}, {oat:20.0, roc:1899}, {oat:30.0, roc:1325}, {oat:38.1, roc:828}],
+      PA_2000: [{oat:-45.1, roc:2610}, {oat:-40.2, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2680}, {oat:-9.9, roc:2705}, {oat:-0.1, roc:2600}, {oat:10.1, roc:2200}, {oat:20.0, roc:1714}, {oat:30.0, roc:1143}, {oat:36.0, roc:768}],
+      PA_3000: [{oat:-45.1, roc:2610}, {oat:-40.0, roc:2628}, {oat:-29.9, roc:2659}, {oat:-20.1, roc:2680}, {oat:-10.1, roc:2705}, {oat:0.1, roc:2425}, {oat:10.1, roc:2001}, {oat:20.0, roc:1528}, {oat:30.0, roc:972}, {oat:34.0, roc:712}],
+      PA_4000: [{oat:-44.9, roc:2614}, {oat:-40.0, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2680}, {oat:-9.9, roc:2544}, {oat:-0.1, roc:2242}, {oat:10.1, roc:1826}, {oat:20.0, roc:1336}, {oat:30.0, roc:775}, {oat:32.1, roc:646}],
+      PA_5000: [{oat:-44.9, roc:2610}, {oat:-40.0, roc:2628}, {oat:-30.0, roc:2656}, {oat:-20.1, roc:2610}, {oat:-9.9, roc:2365}, {oat:0.1, roc:2060}, {oat:10.1, roc:1630}, {oat:20.0, roc:1147}, {oat:29.8, roc:586}],
+      PA_6000: [{oat:-44.9, roc:2558}, {oat:-40.0, roc:2579}, {oat:-30.0, roc:2610}, {oat:-19.9, roc:2435}, {oat:-9.9, roc:2186}, {oat:0.1, roc:1854}, {oat:10.1, roc:1437}, {oat:19.9, roc:961}, {oat:28.1, roc:516}],
+      PA_7000: [{oat:-45.1, roc:2428}, {oat:-40.0, roc:2449}, {oat:-30.0, roc:2477}, {oat:-19.9, roc:2260}, {oat:-10.1, roc:2001}, {oat:-0.1, roc:1679}, {oat:10.1, roc:1245}, {oat:20.0, roc:758}, {oat:26.0, roc:432}],
+      PA_8000: [{oat:-44.7, roc:2288}, {oat:-40.0, roc:2302}, {oat:-30.0, roc:2302}, {oat:-20.1, roc:2074}, {oat:-10.1, roc:1819}, {oat:0.1, roc:1490}, {oat:10.1, roc:1049}, {oat:20.0, roc:558}, {oat:24.1, roc:345}],
+      PA_9000: [{oat:-44.9, roc:2151}, {oat:-40.0, roc:2165}, {oat:-29.9, roc:2123}, {oat:-20.1, roc:1896}, {oat:-10.1, roc:1640}, {oat:-0.1, roc:1294}, {oat:10.1, roc:860}, {oat:20.0, roc:380}, {oat:22.1, roc:250}],
+      PA_10000: [{oat:-44.9, roc:2008}, {oat:-40.2, roc:2018}, {oat:-29.7, roc:1938}, {oat:-19.7, roc:1703}, {oat:-10.1, roc:1448}, {oat:-0.1, roc:1101}, {oat:9.9, roc:656}, {oat:20.0, roc:142}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: -5, points: [{mass:10004, roc:201}, {mass:10495, roc:107}, {mass:11004, roc:-5}]},
+        {refRoc: 401, points: [{mass:9996, roc:621}, {mass:10495, roc:520}, {mass:10995, roc:401}, {mass:11503, roc:257}, {mass:12003, roc:110}, {mass:12380, roc:2}]},
+        {refRoc: 804, points: [{mass:9996, roc:1038}, {mass:10495, roc:930}, {mass:10995, roc:804}, {mass:11503, roc:656}, {mass:12003, roc:502}, {mass:12503, roc:341}, {mass:13002, roc:180}, {mass:13572, roc:2}]},
+        {refRoc: 1199, points: [{mass:9996, roc:1455}, {mass:10495, roc:1332}, {mass:11004, roc:1199}, {mass:11503, roc:1066}, {mass:12003, roc:919}, {mass:12503, roc:765}, {mass:13002, roc:600}, {mass:13502, roc:436}, {mass:13993, roc:261}, {mass:14501, roc:82}, {mass:14589, roc:44}]},
+        {refRoc: 1602, points: [{mass:9996, roc:1861}, {mass:10495, roc:1735}, {mass:10995, roc:1602}, {mass:11495, roc:1448}, {mass:12003, roc:1290}, {mass:12511, roc:1140}, {mass:13011, roc:989}, {mass:13502, roc:842}, {mass:14001, roc:688}, {mass:14501, roc:527}, {mass:14598, roc:492}]},
+        {refRoc: 2001, points: [{mass:9996, roc:2270}, {mass:10495, roc:2141}, {mass:11004, roc:2001}, {mass:11503, roc:1850}, {mass:12003, roc:1703}, {mass:12511, roc:1553}, {mass:13011, roc:1409}, {mass:13511, roc:1259}, {mass:14010, roc:1112}, {mass:14501, roc:954}, {mass:14598, roc:926}]},
+        {refRoc: 2400, points: [{mass:9996, roc:2680}, {mass:10495, roc:2544}, {mass:11004, roc:2400}, {mass:11503, roc:2249}, {mass:12003, roc:2099}, {mass:12503, roc:1966}, {mass:13011, roc:1840}, {mass:13502, roc:1707}, {mass:14001, roc:1567}, {mass:14510, roc:1437}, {mass:14606, roc:1409}]},
+        {refRoc: 2799, points: [{mass:9996, roc:3069}, {mass:10495, roc:2939}, {mass:10995, roc:2799}, {mass:11503, roc:2649}, {mass:12003, roc:2502}, {mass:12503, roc:2361}, {mass:13002, roc:2225}, {mass:13511, roc:2088}, {mass:14010, roc:1959}, {mass:14501, roc:1836}, {mass:14615, roc:1808}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-84 — OEI 30 Min AI OFF/ECS OFF
+  // image: images/FIG_4_84_OEI_ROC_30MIN_AI_OFF.png
+  // X axis: -800 to 2400 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  oei_30min_ai_off: {
+    chartRef: "Fig 4-84",
+    image: "images/FIG_4_84_OEI_ROC_30MIN_AI_OFF.png",
+    xMin: -800,
+    xMax: 2400,
+    oatMax: 40,
+    rightBoundary: [
+      {oat:30, roc:1760},
+      {oat:27, roc:1760},
+      {oat:23, roc:1750},
+      {oat:18, roc:1740},
+      {oat:12, roc:1730},
+      {oat: 6, roc:1720},
+      {oat:-2, roc:1680},
+      {oat:-15, roc:1680},
+      {oat:-20, roc:1660},
+      {oat:-30, roc:1640},
+      {oat:-39, roc:1600},
+    ],
+    upperPanel: {
+      PA_neg1000: [{oat:30.7, roc:1749}, {oat:40.1, roc:1437}],
+      PA_0: [{oat:27.1, roc:1749}, {oat:31.9, roc:1590}, {oat:40.0, roc:1311}],
+      PA_1000: [{oat:22.9, roc:1742}, {oat:30.0, roc:1515}, {oat:38.1, roc:1232}],
+      PA_2000: [{oat:17.7, roc:1735}, {oat:20.0, roc:1675}, {oat:30.0, roc:1366}, {oat:36.2, roc:1157}],
+      PA_3000: [{oat:12.2, roc:1728}, {oat:20.0, roc:1537}, {oat:30.0, roc:1228}, {oat:34.1, roc:1086}],
+      PA_4000: [{oat:5.7, roc:1714}, {oat:10.1, roc:1632}, {oat:20.0, roc:1384}, {oat:30.0, roc:1086}, {oat:32.1, roc:1015}],
+      PA_5000: [{oat:-2.5, roc:1707}, {oat:0.0, roc:1671}, {oat:10.1, roc:1487}, {oat:20.4, roc:1242}, {oat:30.0, roc:937}],
+      PA_6000: [{oat:-11.2, roc:1686}, {oat:-0.2, roc:1530}, {oat:10.1, roc:1356}, {oat:20.0, roc:1115}, {oat:28.0, roc:870}],
+      PA_7000: [{oat:-20.0, roc:1657}, {oat:-9.9, roc:1537}, {oat:0.0, roc:1398}, {oat:10.1, roc:1218}, {oat:20.0, roc:976}, {oat:26.1, roc:796}],
+      PA_8000: [{oat:-30.5, roc:1629}, {oat:-19.9, roc:1522}, {oat:-9.9, roc:1402}, {oat:0.0, roc:1260}, {oat:10.1, roc:1083}, {oat:20.2, roc:835}, {oat:24.3, roc:710}],
+      PA_9000: [{oat:-39.0, roc:1604}, {oat:-30.0, roc:1515}, {oat:-20.0, roc:1398}, {oat:-9.9, roc:1271}, {oat:0.0, roc:1132}, {oat:10.1, roc:952}, {oat:20.0, roc:696}, {oat:22.2, roc:632}],
+      PA_10000: [{oat:-44.1, roc:1533}, {oat:-40.1, roc:1498}, {oat:-30.0, roc:1384}, {oat:-20.0, roc:1267}, {oat:-9.9, roc:1136}, {oat:0.0, roc:998}, {oat:10.1, roc:803}, {oat:20.0, roc:537}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: 398, points: [{mass:9996, roc:640}, {mass:10510, roc:540}, {mass:11007, roc:398}, {mass:11494, roc:214}, {mass:12000, roc:23}, {mass:12497, roc:-162}, {mass:12993, roc:-350}, {mass:13499, roc:-555}, {mass:13996, roc:-796}]},
+        {refRoc: 799, points: [{mass:10004, roc:1051}, {mass:10501, roc:937}, {mass:10998, roc:799}, {mass:11503, roc:622}, {mass:12000, roc:437}, {mass:12506, roc:264}, {mass:13002, roc:86}, {mass:13499, roc:-84}, {mass:13996, roc:-268}, {mass:14501, roc:-463}, {mass:14998, roc:-669}, {mass:15264, roc:-796}]},
+        {refRoc: 1200, points: [{mass:10004, roc:1430}, {mass:10501, roc:1324}, {mass:10998, roc:1200}, {mass:11503, roc:1054}, {mass:12000, roc:898}, {mass:12497, roc:746}, {mass:13002, roc:590}, {mass:13508, roc:434}, {mass:14004, roc:281}, {mass:14501, roc:122}, {mass:14998, roc:-41}, {mass:15503, roc:-197}, {mass:15592, roc:-233}]},
+        {refRoc: 1600, points: [{mass:10004, roc:1799}, {mass:10501, roc:1717}, {mass:10998, roc:1600}, {mass:11503, roc:1469}, {mass:12000, roc:1331}, {mass:12506, roc:1200}, {mass:13002, roc:1058}, {mass:13508, roc:920}, {mass:14004, roc:781}, {mass:14501, roc:643}, {mass:14998, roc:512}, {mass:15503, roc:384}, {mass:15610, roc:359}]},
+        {refRoc: 2001, points: [{mass:9996, roc:2210}, {mass:10501, roc:2115}, {mass:10998, roc:2001}, {mass:11503, roc:1873}, {mass:12000, roc:1739}, {mass:12497, roc:1604}, {mass:13002, roc:1469}, {mass:13508, roc:1342}, {mass:14004, roc:1218}, {mass:14501, roc:1100}, {mass:14998, roc:980}, {mass:15503, roc:863}, {mass:15601, roc:833}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-85 — OEI MCP AI OFF/ECS OFF
+  // image: images/FIG_4_85_OEI_ROC_MCP_AI_OFF.png
+  // X axis: -800 to 2400 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  oei_mcp_ai_off: {
+    chartRef: "Fig 4-85",
+    image: "images/FIG_4_85_OEI_ROC_MCP_AI_OFF.png",
+    xMin: -800,
+    xMax: 2400,
+    oatMax: 40,
+    rightBoundary: [
+      {oat:15, roc:1740},
+      {oat:12, roc:1730},
+      {oat: 8, roc:1720},
+      {oat: 3, roc:1720},
+      {oat:-3, roc:1700},
+      {oat:-10, roc:1690},
+      {oat:-18, roc:1680},
+      {oat:-26, roc:1650},
+      {oat:-34, roc:1620},
+    ],
+    upperPanel: {
+      PA_neg1000: [{oat:14.9, roc:1735}, {oat:19.9, roc:1600}, {oat:30.0, roc:1214}, {oat:40.0, roc:824}],
+      PA_0: [{oat:11.9, roc:1725}, {oat:19.9, roc:1480}, {oat:30.0, roc:1090}, {oat:40.0, roc:705}],
+      PA_1000: [{oat:7.8, roc:1721}, {oat:9.9, roc:1657}, {oat:20.0, roc:1338}, {oat:30.0, roc:966}, {oat:38.0, roc:654}],
+      PA_2000: [{oat:3.0, roc:1717}, {oat:9.9, roc:1519}, {oat:20.0, roc:1196}, {oat:30.0, roc:827}, {oat:34.1, roc:533}],
+      PA_3000: [{oat:-3.2, roc:1703}, {oat:0.2, roc:1643}, {oat:10.1, roc:1377}, {oat:20.0, roc:1065}, {oat:30.0, roc:703}, {oat:34.1, roc:533}],
+      PA_4000: [{oat:-9.9, roc:1689}, {oat:0.0, roc:1508}, {oat:9.9, roc:1235}, {oat:20.0, roc:923}, {oat:30.0, roc:565}, {oat:32.1, roc:484}],
+      PA_5000: [{oat:-17.4, roc:1668}, {oat:-10.1, roc:1561}, {oat:0.0, roc:1374}, {oat:10.1, roc:1097}, {oat:20.0, roc:796}, {oat:30.0, roc:434}],
+      PA_6000: [{oat:-25.9, roc:1643}, {oat:-19.9, roc:1572}, {oat:-10.1, roc:1427}, {oat:0.0, roc:1235}, {oat:9.9, roc:959}, {oat:20.0, roc:657}, {oat:28.2, roc:377}],
+      PA_7000: [{oat:-33.9, roc:1622}, {oat:-30.0, roc:1572}, {oat:-20.0, roc:1444}, {oat:-9.9, roc:1292}, {oat:0.0, roc:1104}, {oat:9.9, roc:835}, {oat:20.0, roc:533}, {oat:26.1, roc:328}],
+      PA_8000: [{oat:-42.9, roc:1586}, {oat:-30.1, roc:1441}, {oat:-20.0, roc:1306}, {oat:-9.9, roc:1161}, {oat:0.0, roc:966}, {oat:9.9, roc:703}, {oat:20.0, roc:409}, {oat:24.3, roc:264}],
+      PA_9000: [{oat:-45.0, roc:1480}, {oat:-40.1, roc:1430}, {oat:-30.1, roc:1313}, {oat:-20.0, roc:1182}, {oat:-10.1, roc:1033}, {oat:0.0, roc:835}, {oat:9.9, roc:572}, {oat:20.0, roc:278}, {oat:22.2, roc:200}],
+      PA_10000: [{oat:-45.0, roc:1345}, {oat:-40.1, roc:1296}, {oat:-30.1, roc:1182}, {oat:-20.0, roc:1051}, {oat:-10.1, roc:905}, {oat:0.0, roc:710}, {oat:9.9, roc:434}, {oat:20.0, roc:118}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: -2, points: [{mass:10000, roc:157}, {mass:10497, roc:101}, {mass:10994, roc:-2}, {mass:11500, roc:-148}, {mass:11997, roc:-325}, {mass:12503, roc:-520}, {mass:13000, roc:-718}, {mass:13186, roc:-800}]},
+        {refRoc: 398, points: [{mass:10000, roc:597}, {mass:10497, roc:515}, {mass:10994, roc:398}, {mass:11500, roc:239}, {mass:12006, roc:65}, {mass:12503, roc:-105}, {mass:13009, roc:-275}, {mass:13497, roc:-460}, {mass:13994, roc:-648}, {mass:14322, roc:-796}]},
+        {refRoc: 799, points: [{mass:10000, roc:998}, {mass:10497, roc:913}, {mass:11003, roc:799}, {mass:11500, roc:643}, {mass:11997, roc:473}, {mass:12503, roc:317}, {mass:13009, roc:157}, {mass:13497, roc:5}, {mass:14003, roc:-151}, {mass:14500, roc:-325}, {mass:15015, roc:-502}, {mass:15503, roc:-669}, {mass:15592, roc:-701}]},
+        {refRoc: 1196, points: [{mass:10000, roc:1427}, {mass:10497, roc:1317}, {mass:10994, roc:1196}, {mass:11500, roc:1061}, {mass:11997, roc:920}, {mass:12503, roc:781}, {mass:13009, roc:650}, {mass:13506, roc:512}, {mass:14012, roc:374}, {mass:14509, roc:214}, {mass:15006, roc:58}, {mass:15503, roc:-70}, {mass:15592, roc:-91}]},
+        {refRoc: 1597, points: [{mass:10000, roc:1810}, {mass:10497, roc:1714}, {mass:11003, roc:1597}, {mass:11500, roc:1462}, {mass:12006, roc:1324}, {mass:12503, roc:1200}, {mass:13000, roc:1079}, {mass:13506, roc:959}, {mass:14003, roc:845}, {mass:14509, roc:721}, {mass:15006, roc:601}, {mass:15503, roc:484}, {mass:15601, roc:459}]},
+        {refRoc: 1799, points: [{mass:10000, roc:2008}, {mass:10497, roc:1912}, {mass:10994, roc:1799}, {mass:11509, roc:1661}, {mass:12006, roc:1522}, {mass:12503, roc:1398}, {mass:13009, roc:1278}, {mass:13506, roc:1161}, {mass:14003, roc:1047}, {mass:14500, roc:923}, {mass:15006, roc:799}, {mass:15503, roc:682}, {mass:15583, roc:661}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-87 — OEI 30 Min AI ON/ECS ON
+  // image: images/FIG_4_87_OEI_ROC_30MIN_AI_ON.png
+  // X axis: -800 to 2400 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  oei_30min_ai_on: {
+    chartRef: "Fig 4-87",
+    image: "images/FIG_4_87_OEI_ROC_30MIN_AI_ON.png",
+    xMin: -800,
+    xMax: 2400,
+    oatMax: 40,
+    upperPanel: {
+      PA_neg1000: [{oat:12.3, roc:1606}, {oat:20.1, roc:1358}, {oat:30.2, roc:964}, {oat:39.9, roc:553}],
+      PA_0: [{oat:7.0, roc:1602}, {oat:10.2, roc:1528}, {oat:20.1, roc:1209}, {oat:30.0, roc:819}, {oat:40.1, roc:397}],
+      PA_1000: [{oat:1.0, roc:1592}, {oat:10.2, roc:1389}, {oat:20.1, roc:1063}, {oat:30.2, roc:666}, {oat:38.2, roc:336}],
+      PA_2000: [{oat:-45.0, roc:1460}, {oat:-40.0, roc:1478}, {oat:-29.9, roc:1514}, {oat:-20.0, roc:1545}, {oat:-9.9, roc:1574}, {oat:-5.1, roc:1577}, {oat:0.3, roc:1464}, {oat:10.2, roc:1233}, {oat:20.1, roc:904}, {oat:30.0, roc:514}, {oat:36.2, roc:255}],
+      PA_3000: [{oat:-44.8, roc:1333}, {oat:-40.0, roc:1365}, {oat:-29.9, roc:1404}, {oat:-19.8, roc:1443}, {oat:-9.9, roc:1471}, {oat:-7.0, roc:1471}, {oat:0.2, roc:1322}, {oat:10.2, roc:1077}, {oat:20.1, roc:751}, {oat:30.4, roc:361}, {oat:34.1, roc:184}],
+      PA_4000: [{oat:-44.8, roc:1230}, {oat:-39.8, roc:1255}, {oat:-29.9, roc:1297}, {oat:-20.0, roc:1329}, {oat:-9.9, roc:1350}, {oat:0.1, roc:1173}, {oat:10.2, roc:918}, {oat:20.1, roc:581}, {oat:27.4, roc:322}],
+      PA_5000: [{oat:-45.2, roc:1116}, {oat:-39.8, roc:1145}, {oat:-29.9, roc:1191}, {oat:-20.0, roc:1216}, {oat:-9.9, roc:1226}, {oat:0.2, roc:1014}, {oat:10.3, roc:744}, {oat:20.1, roc:432}, {oat:30.4, roc:46}],
+      PA_6000: [{oat:-45.0, roc:1010}, {oat:-39.8, roc:1031}, {oat:-29.9, roc:1067}, {oat:-20.0, roc:1092}, {oat:-12.4, roc:1116}, {oat:-9.9, roc:1070}, {oat:0.2, roc:847}, {oat:10.2, roc:595}, {oat:20.1, roc:273}, {oat:28.2, roc:-18}],
+      PA_7000: [{oat:-44.8, roc:907}, {oat:-40.0, roc:929}, {oat:-29.9, roc:957}, {oat:-19.8, roc:978}, {oat:-13.2, roc:982}, {oat:-9.9, roc:911}, {oat:0.2, roc:695}, {oat:10.2, roc:432}, {oat:19.9, roc:120}, {oat:26.3, roc:-86}],
+      PA_8000: [{oat:-45.0, roc:794}, {oat:-39.8, roc:812}, {oat:-29.9, roc:836}, {oat:-19.8, roc:847}, {oat:-14.8, roc:854}, {oat:-9.9, roc:755}, {oat:0.2, roc:535}, {oat:10.1, roc:269}, {oat:20.1, roc:-29}, {oat:24.5, roc:-155}],
+      PA_9000: [{oat:-45.0, roc:680}, {oat:-39.9, roc:695}, {oat:-29.9, roc:716}, {oat:-20.0, roc:734}, {oat:-15.9, roc:730}, {oat:-9.9, roc:599}, {oat:0.2, roc:382}, {oat:10.0, roc:113}, {oat:20.1, roc:-167}, {oat:22.4, roc:-234}],
+      PA_10000: [{oat:-44.8, roc:556}, {oat:-40.0, roc:574}, {oat:-29.9, roc:595}, {oat:-20.0, roc:602}, {oat:-17.9, roc:609}, {oat:-10.1, roc:439}, {oat:0.2, roc:223}, {oat:10.1, roc:-43}, {oat:20.1, roc:-323}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: -798, points: [{mass:10004, roc:-649}, {mass:10501, roc:-706}, {mass:10980, roc:-798}]},
+        {refRoc: -401, points: [{mass:10004, roc:-270}, {mass:10500, roc:-316}, {mass:11006, roc:-401}, {mass:11503, roc:-532}, {mass:12000, roc:-692}, {mass:12328, roc:-798}]},
+        {refRoc: 0, points: [{mass:10003, roc:148}, {mass:10500, roc:85}, {mass:10997, roc:0}, {mass:11494, roc:-121}, {mass:11999, roc:-263}, {mass:12496, roc:-401}, {mass:12993, roc:-546}, {mass:13499, roc:-706}, {mass:13792, roc:-798}]},
+        {refRoc: 397, points: [{mass:10003, roc:585}, {mass:10499, roc:503}, {mass:10996, roc:397}, {mass:11502, roc:269}, {mass:11999, roc:134}, {mass:13001, roc:-125}, {mass:13498, roc:-249}, {mass:14004, roc:-383}, {mass:14501, roc:-518}, {mass:14998, roc:-660}, {mass:15468, roc:-802}]},
+        {refRoc: 797, points: [{mass:10002, roc:1003}, {mass:10499, roc:907}, {mass:10996, roc:797}, {mass:11492, roc:677}, {mass:11998, roc:549}, {mass:12504, roc:432}, {mass:13001, roc:319}, {mass:13498, roc:205}, {mass:14003, roc:92}, {mass:14491, roc:-29}, {mass:14997, roc:-146}, {mass:15503, roc:-266}, {mass:15591, roc:-291}]},
+        {refRoc: 1198, points: [{mass:10001, roc:1400}, {mass:10498, roc:1304}, {mass:10995, roc:1198}, {mass:11501, roc:1077}, {mass:11998, roc:953}, {mass:12503, roc:843}, {mass:13009, roc:741}, {mass:13506, roc:631}, {mass:14003, roc:528}, {mass:14499, roc:418}, {mass:15005, roc:308}, {mass:15502, roc:195}, {mass:15608, roc:170}]},
+        {refRoc: 1602, points: [{mass:10001, roc:1801}, {mass:10498, roc:1709}, {mass:10994, roc:1602}, {mass:11491, roc:1475}, {mass:12006, roc:1343}, {mass:12503, roc:1230}, {mass:13000, roc:1124}, {mass:13496, roc:1024}, {mass:14002, roc:925}, {mass:14499, roc:822}, {mass:15005, roc:719}, {mass:15501, roc:613}, {mass:15590, roc:588}]},
+        {refRoc: 1801, points: [{mass:10001, roc:2006}, {mass:10497, roc:1911}, {mass:10994, roc:1801}, {mass:11500, roc:1673}, {mass:12006, roc:1542}, {mass:12502, roc:1432}, {mass:12999, roc:1326}, {mass:13505, roc:1223}, {mass:13993, roc:1120}, {mass:14507, roc:1021}, {mass:14587, roc:1003}]}
+      ]
+    }
+  },
+
+  // --------------------------------------------------------
+  // Fig 4-88 — OEI MCP AI ON/ECS ON
+  // image: images/FIG_4_88_OEI_ROC_MCP_AI_ON.png
+  // X axis: -800 to 2400 ft/min
+  // ref_mass: 11000 kg | max_mass: 15600 kg | OAT top: 40°C
+  oei_mcp_ai_on: {
+    chartRef: "Fig 4-88",
+    image: "images/FIG_4_88_OEI_ROC_MCP_AI_ON.png",
+    xMin: -800,
+    xMax: 2400,
+    oatMax: 40,
+    upperPanel: {
+      PA_neg1000: [{oat:-3.0, roc:1590}, {oat:0.0, roc:1519}, {oat:10.1, roc:1176}, {oat:20.0, roc:783}, {oat:30.0, roc:333}, {oat:40.1, roc:-135}],
+      PA_0: [{oat:-8.1, roc:1579}, {oat:0.0, roc:1378}, {oat:10.1, roc:1027}, {oat:20.0, roc:641}, {oat:30.2, roc:166}, {oat:40.1, roc:-238}],
+      PA_1000: [{oat:-14.2, roc:1562}, {oat:-9.9, roc:1484}, {oat:0.0, roc:1236}, {oat:10.1, roc:889}, {oat:20.0, roc:496}, {oat:30.0, roc:53}, {oat:38.3, roc:-280}],
+      PA_2000: [{oat:-45.0, roc:1458}, {oat:-40.1, roc:1480}, {oat:-30.0, roc:1519}, {oat:-19.9, roc:1547}, {oat:-9.9, roc:1338}, {oat:0.0, roc:1091}, {oat:10.1, roc:740}, {oat:20.0, roc:350}, {oat:29.8, roc:-68}, {oat:36.2, roc:-309}],
+      PA_3000: [{oat:-44.7, roc:1334}, {oat:-40.1, roc:1366}, {oat:-30.0, roc:1405}, {oat:-22.0, roc:1437}, {oat:-19.9, roc:1406}, {oat:-10.1, roc:1204}, {oat:0.2, roc:938}, {oat:10.1, roc:591}, {oat:20.0, roc:198}, {oat:30.0, roc:-195}, {oat:34.2, roc:-348}],
+      PA_4000: [{oat:-44.7, roc:1231}, {oat:-40.1, roc:1256}, {oat:-30.0, roc:1295}, {oat:-23.4, roc:1313}, {oat:-19.9, roc:1260}, {oat:-9.9, roc:1048}, {oat:0.0, roc:782}, {oat:10.1, roc:435}, {oat:20.0, roc:42}, {oat:30.0, roc:-298}, {oat:32.1, roc:-383}],
+      PA_5000: [{oat:-45.0, roc:1125}, {oat:-40.1, roc:1150}, {oat:-30.0, roc:1189}, {oat:-23.8, roc:1203}, {oat:-20.0, roc:1118}, {oat:-9.9, roc:902}, {oat:0.0, roc:633}, {oat:10.1, roc:285}, {oat:20.2, roc:-75}, {oat:25.2, roc:-252}],
+      PA_6000: [{oat:-44.9, roc:1015}, {oat:-40.1, roc:1040}, {oat:-30.0, roc:1072}, {oat:-25.9, roc:1083}, {oat:-19.9, roc:966}, {oat:-9.9, roc:754}, {oat:0.2, roc:467}, {oat:10.1, roc:127}, {oat:20.0, roc:-195}, {oat:28.2, roc:-475}],
+      PA_7000: [{oat:-45.2, roc:909}, {oat:-40.1, roc:930}, {oat:-30.0, roc:959}, {oat:-26.9, roc:969}, {oat:-19.9, roc:817}, {oat:-9.9, roc:598}, {oat:0.2, roc:318}, {oat:10.1, roc:-15}, {oat:20.0, roc:-316}, {oat:26.1, roc:-518}],
+      PA_8000: [{oat:-44.9, roc:795}, {oat:-40.1, roc:813}, {oat:-30.0, roc:838}, {oat:-28.0, roc:835}, {oat:-19.9, roc:658}, {oat:-9.9, roc:445}, {oat:0.2, roc:159}, {oat:9.9, roc:-139}, {oat:20.0, roc:-436}, {oat:24.3, roc:-582}],
+      PA_9000: [{oat:-45.0, roc:682}, {oat:-39.9, roc:700}, {oat:-30.0, roc:721}, {oat:-19.9, roc:509}, {oat:-9.9, roc:297}, {oat:0.2, roc:6}, {oat:10.1, roc:-259}, {oat:19.9, roc:-557}, {oat:22.2, roc:-638}],
+      PA_10000: [{oat:-45.0, roc:562}, {oat:-39.9, roc:576}, {oat:-32.6, roc:594}, {oat:-30.0, roc:573}, {oat:-20.0, roc:357}, {oat:-10.1, roc:144}, {oat:0.0, roc:-114}, {oat:10.1, roc:-391}, {oat:20.0, roc:-706}]
+    },
+    lowerPanel: {
+      refMassKg: 11000,
+      maxMassKg: 15600,
+      lines: [
+        {refRoc: -796, points: [{mass:10004, roc:-714}, {mass:10501, roc:-732}, {mass:10997, roc:-796}]},
+        {refRoc: -396, points: [{mass:9996, roc:-296}, {mass:10501, roc:-325}, {mass:10997, roc:-396}, {mass:11502, roc:-520}, {mass:11999, roc:-669}, {mass:12406, roc:-797}]},
+        {refRoc: 1, points: [{mass:9996, roc:143}, {mass:10501, roc:86}, {mass:11006, roc:1}, {mass:11502, roc:-113}, {mass:11999, roc:-244}, {mass:12495, roc:-382}, {mass:12991, roc:-521}, {mass:13496, roc:-645}, {mass:13993, roc:-773}, {mass:14072, roc:-805}]},
+        {refRoc: 405, points: [{mass:10004, roc:583}, {mass:10501, roc:504}, {mass:10997, roc:405}, {mass:11502, roc:284}, {mass:12007, roc:160}, {mass:12504, roc:39}, {mass:12991, roc:-71}, {mass:13496, roc:-184}, {mass:13993, roc:-298}, {mass:14498, roc:-418}, {mass:14994, roc:-546}, {mass:15499, roc:-692}, {mass:15588, roc:-720}]},
+        {refRoc: 802, points: [{mass:10004, roc:1001}, {mass:10501, roc:905}, {mass:10997, roc:802}, {mass:11502, roc:681}, {mass:11999, roc:564}, {mass:12495, roc:458}, {mass:13000, roc:351}, {mass:13496, roc:248}, {mass:14001, roc:142}, {mass:14498, roc:21}, {mass:14994, roc:-100}, {mass:15499, roc:-206}, {mass:15588, roc:-220}]},
+        {refRoc: 1202, points: [{mass:10004, roc:1401}, {mass:10501, roc:1309}, {mass:10997, roc:1202}, {mass:11502, roc:1082}, {mass:11999, roc:961}, {mass:12504, roc:855}, {mass:13000, roc:752}, {mass:13505, roc:649}, {mass:14001, roc:549}, {mass:14498, roc:443}, {mass:14994, roc:340}, {mass:15499, roc:244}, {mass:15597, roc:226}]},
+        {refRoc: 1599, points: [{mass:9996, roc:1798}, {mass:10501, roc:1706}, {mass:10997, roc:1599}, {mass:11493, roc:1482}, {mass:12007, roc:1361}, {mass:12504, roc:1248}, {mass:13000, roc:1141}, {mass:13505, roc:1042}, {mass:14001, roc:939}, {mass:14498, roc:840}, {mass:14994, roc:740}, {mass:15499, roc:641}, {mass:15597, roc:627}]}
+      ]
+    }
+  }
+
+};
+
+
 const AC = {
   variant: "CH-149-511",
-  version: "1.6.16",
+  version: "1.7.0",
   perf: AC_PERF,
   chartImages: CHART_IMAGES,
 };
+
+// Wire climbPerf now that AC_CLIMB_PERF is declared above
+AC.perf.climbPerf = AC_CLIMB_PERF;
 
 // Apply localStorage overrides per family §2.1. v1 has no editor yet, but
 // wiring this in early means future editor work doesn't have to refactor.

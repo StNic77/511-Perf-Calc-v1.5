@@ -66,6 +66,13 @@ const STORE = {
     hogeValue:  null,      // % Q — whatever is currently in the HOGE field
     hogeSource: "pilot",   // "pilot" | "chart" — tracks how the value arrived
   },
+
+  // Climb Performance state
+  climb: {
+    auw: null,   // kg
+    pa:  null,   // ft
+    oat: null,   // °C
+  },
 };
 
 
@@ -138,7 +145,7 @@ function updatePullButtons() {
     const canPull = SESSION.hover !== null;
     sarFromHovBtn.hidden = !canPull;
     if (canPull) {
-      sarFromHovBtn.textContent = `↓ Pull from Hover Performance (${fmtTime(SESSION.hover.time)})`;
+      sarFromHovBtn.textContent = `↓ Pull from Max Mass to Hover (${fmtTime(SESSION.hover.time)})`;
     }
   }
 
@@ -166,7 +173,7 @@ function pullPretoToPa() {
   rerender();
 }
 
-// Pull Hover Performance → SAR Check (auw + pa + oat + wind)
+// Pull Max Mass to Hover → SAR Check (auw + pa + oat + wind)
 function pullHoverToSar() {
   if (!SESSION.hover) return;
   const { pa, oat, auw, wind } = SESSION.hover;
@@ -257,6 +264,15 @@ function clearTab(tabName) {
                  "#hovWindInput","#hovTmInput"];
     ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
     rerender();
+
+  } else if (tabName === "climb") {
+    STORE.climb.auw = null;
+    STORE.climb.pa  = null;
+    STORE.climb.oat = null;
+    ["#climbAuwInput","#climbPaInput","#climbOatInput"].forEach(id => {
+      const inp = $(id); if (inp) inp.value = "";
+    });
+    renderClimb();
   }
   updatePullButtons();
 }
@@ -347,9 +363,16 @@ function syncAntiIceButtons() {
     b.setAttribute("aria-checked", isActive);
   });
 
-  // Hover Performance tab buttons
+  // Max Mass to Hover tab buttons
   $("[data-hov-ai]") && $$("[data-hov-ai]").forEach(b => {
     const isActive = b.dataset.hovAi === state;
+    b.classList.toggle("seg__btn--active", isActive);
+    b.setAttribute("aria-checked", isActive);
+  });
+
+  // Climb Performance tab buttons
+  $("[data-climb-ai]") && $$("[data-climb-ai]").forEach(b => {
+    const isActive = b.dataset.climbAi === state;
     b.classList.toggle("seg__btn--active", isActive);
     b.setAttribute("aria-checked", isActive);
   });
@@ -391,12 +414,14 @@ function showTab(tabName) {
       (tabName === "pretooff" && panel.id === "pretooffPanel") ||
       (tabName === "sarcb"    && panel.id === "sarcbPanel") ||
       (tabName === "fuel"     && panel.id === "fuelPanel") ||
-      (tabName === "hover"    && panel.id === "hoverPanel");
+      (tabName === "hover"    && panel.id === "hoverPanel") ||
+      (tabName === "climb"    && panel.id === "climbPanel");
     panel.hidden = !isActive;
   });
 
   if (tabName === "fuel")  renderFuel();
   if (tabName === "hover") renderHover();
+  if (tabName === "climb") renderClimb();
 
   // Ensure AI buttons on the newly-visible tab reflect current STORE.antiIce.
   // This catches the case where AI state changed while on a different tab.
@@ -1824,7 +1849,7 @@ function renderPreTakeOff() {
 
 
 
-// ---- Hover Performance ----------------------------------------------------
+// ---- Max Mass to Hover ----------------------------------------------------
 //
 // Computes and renders maximum mass to hover OGE (Fig 4-21, AI OFF).
 // Three-panel chain: PA+OAT → base mass → wind correction → TM correction.
@@ -2019,7 +2044,7 @@ function renderHoverResultPane(result, auw, cardId, bodyId, label) {
 
 
 // ============================================================================
-// Hover Performance Chart Traces
+// Max Mass to Hover Chart Traces
 // Three-panel nomogram: Panel 1 (OAT → baseMass), Panel 2 (wind → windMass),
 // Panel 3 (TM → finalMass). All panels share the same mass X axis.
 //
@@ -3192,6 +3217,8 @@ function rerender() {
     renderSARCheckHOGE();
   } else if (STORE.currentTab === "hover") {
     renderHover();
+  } else if (STORE.currentTab === "climb") {
+    renderClimb();
   }
 }
 
@@ -3232,6 +3259,411 @@ function currentFuelKg() {
   if (F.readings.length > 0) return F.readings[F.readings.length - 1].kg;
   return null;
 }
+
+
+// ============================================================================
+// Climb Performance — Rate of Climb at 75 KIAS
+// ============================================================================
+//
+// Layout mirrors Max Mass to Hover exactly:
+//   - Static HTML inputs in index.html (native focus/keyboard behaviour)
+//   - Inputs wired once in init() via climbBind()
+//   - Two side-by-side result cards: AEO and OEI
+//   - Each card shows MCP and 30 Min rows
+//   - Reference charts: buildChartDetailsWithTrace() — collapsible <details>,
+//     thumbnail, tap-to-fullscreen, canvas trace overlay
+//
+// AI state: read from STORE.antiIce (global toggle, wired via rerender()).
+
+// ---- Pixel calibration for trace overlay -----------------------------------
+// Linear pixel transforms derived from WPD notepad calibration values.
+// All charts are 1700×2200px. WPD raw coords map directly to pixel space.
+
+const CLIMB_TRACE_CAL = {
+  // Keyed by variantKey — one entry per figure (each has unique image placement)
+  // Pixel anchors measured directly from 1700x2200px chart images
+  // yBot: pixel Y of the bottom axis line (below Alt AUW 15600kg line)
+
+  // AEO AI OFF — 0 to 3200 ft/min, ref line 13000 kg
+  // OAT axis has real compression in upper range — 5-point piecewise anchors
+  aeo_30min_ai_off: {                                    // Fig 4-77
+    imgW: 1700, imgH: 2200,
+    xPx0: 531, xPx3200: 1398, rocMin: 0, rocMax: 3200,
+    // OAT axis: compressed only in top 5°C (45→40°C = 10.8px/°C vs 5.4px/°C below)
+    // Three anchors capture the full axis accurately — everything below 40°C is linear
+    oatAnchors: [
+      { oat: 45, py: 559 },
+      { oat: 40, py: 613 },
+      { oat: -50, py: 1101 },
+    ],
+    yPxMass10000: 1134, yPxMass15600: 1739, yPxRefLine: 1459, refMass: 13000,
+    yBot: 1785,
+  },
+  aeo_mcp_ai_off: {                                      // Fig 4-79
+    imgW: 1700, imgH: 2200,
+    xPx0: 531, xPx3200: 1398, rocMin: 0, rocMax: 3200,
+    // Same OAT axis as Fig 4-77 — compression only in 45→40°C segment
+    oatAnchors: [
+      { oat: 45, py: 559 },
+      { oat: 40, py: 613 },
+      { oat: -50, py: 1101 },
+    ],
+    yPxMass10000: 1134, yPxMass15600: 1739, yPxRefLine: 1459, refMass: 13000,
+    yBot: 1785,
+  },
+
+  // AEO AI ON — 0 to 3200 ft/min, ref line 11000 kg, linear OAT axis
+  aeo_30min_ai_on: {                                     // Fig 4-80
+    imgW: 1700, imgH: 2200,
+    xPx0: 359, xPx3200: 1271, rocMin: 0, rocMax: 3200,
+    oatAnchors: [
+      { oat: 40, py: 558 },
+      { oat: -50, py: 1066 },
+    ],
+    yPxMass10000: 1102, yPxMass15600: 1733, yPxRefLine: 1215, refMass: 11000,
+    yBot: 1785,
+  },
+  aeo_mcp_ai_on: {                                       // Fig 4-82
+    imgW: 1700, imgH: 2200,
+    xPx0: 361, xPx3200: 1277, rocMin: 0, rocMax: 3200,
+    oatAnchors: [
+      { oat: 40, py: 558 },
+      { oat: -50, py: 1066 },
+    ],
+    yPxMass10000: 1102, yPxMass15600: 1733, yPxRefLine: 1215, refMass: 11000,
+    yBot: 1785,
+  },
+
+  // OEI AI OFF — -800 to 2400 ft/min, ref line 11000 kg, linear OAT axis
+  oei_30min_ai_off: {                                    // Fig 4-84
+    imgW: 1700, imgH: 2200,
+    xPxNeg800: 374, xPx0: 600, xPx2400: 1277, rocMin: -800, rocMax: 2400,
+    oatAnchors: [
+      { oat: 40, py: 566 },
+      { oat: -50, py: 1074 },
+    ],
+    yPxMass10000: 1107, yPxMass15600: 1738, yPxRefLine: 1220, refMass: 11000,
+    yBot: 1785,
+  },
+  oei_mcp_ai_off: {                                      // Fig 4-85
+    imgW: 1700, imgH: 2200,
+    xPxNeg800: 512, xPx0: 738, xPx2400: 1416, rocMin: -800, rocMax: 2400,
+    oatAnchors: [
+      { oat: 40, py: 566 },
+      { oat: -50, py: 1074 },
+    ],
+    yPxMass10000: 1107, yPxMass15600: 1738, yPxRefLine: 1220, refMass: 11000,
+    yBot: 1787,
+  },
+
+  // OEI AI ON — -800 to 2400 ft/min, ref line 11000 kg, linear OAT axis
+  oei_30min_ai_on: {                                     // Fig 4-87
+    imgW: 1700, imgH: 2200,
+    xPxNeg800: 513, xPx0: 739, xPx2400: 1417, rocMin: -800, rocMax: 2400,
+    oatAnchors: [
+      { oat: 40, py: 571 },
+      { oat: -50, py: 1079 },
+    ],
+    yPxMass10000: 1112, yPxMass15600: 1743, yPxRefLine: 1225, refMass: 11000,
+    yBot: 1789,
+  },
+  oei_mcp_ai_on: {                                       // Fig 4-88
+    imgW: 1700, imgH: 2200,
+    xPxNeg800: 379, xPx0: 605, xPx2400: 1283, rocMin: -800, rocMax: 2400,
+    oatAnchors: [
+      { oat: 40, py: 571 },
+      { oat: -50, py: 1079 },
+    ],
+    yPxMass10000: 1112, yPxMass15600: 1743, yPxRefLine: 1225, refMass: 11000,
+    yBot: 1789,
+  },
+};
+
+// variantKey maps directly to CLIMB_TRACE_CAL — one entry per figure
+function _climbCalForVariant(variantKey) {
+  return CLIMB_TRACE_CAL[variantKey];
+}
+
+// RoC (ft/min) → canvas pixel X
+function _climbRoC2px(roc, cal, CW) {
+  const x0 = (cal.rocMin === 0) ? cal.xPx0 : cal.xPxNeg800;
+  const v0 = cal.rocMin;
+  const x1 = (cal.rocMax === 3200) ? cal.xPx3200 : cal.xPx2400;
+  const v1 = cal.rocMax;
+  return (x0 + (roc - v0) * (x1 - x0) / (v1 - v0)) * (CW / cal.imgW);
+}
+
+// OAT (°C) → canvas pixel Y (upper panel)
+// Uses piecewise linear interpolation between measured anchor points
+// to correctly handle axis compression present on some charts
+function _climbOAT2py(oat, cal, CH) {
+  const anchors = cal.oatAnchors; // sorted descending by oat
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const hi = anchors[i], lo = anchors[i + 1];
+    if (oat <= hi.oat && oat >= lo.oat) {
+      const t = (hi.oat - oat) / (hi.oat - lo.oat);
+      return (hi.py + t * (lo.py - hi.py)) * (CH / cal.imgH);
+    }
+  }
+  // Clamp to nearest anchor if outside range
+  if (oat > anchors[0].oat) return anchors[0].py * (CH / cal.imgH);
+  return anchors[anchors.length - 1].py * (CH / cal.imgH);
+}
+
+// Mass (kg) → canvas pixel Y (lower panel)
+function _climbMass2py(mass, cal, CH) {
+  return (cal.yPxMass10000 + (mass - 10000) *
+    (cal.yPxMass15600 - cal.yPxMass10000) / (15600 - 10000)) * (CH / cal.imgH);
+}
+
+// Draw trace for one climb chart variant
+function _drawClimbTrace(canvas, result, pa, oat, auw, variantKey) {
+  if (!result || !result.ok || result.exceedsChart) return;
+  const ctx = canvas.getContext("2d");
+  const CW = canvas.width, CH = canvas.height;
+  ctx.clearRect(0, 0, CW, CH);
+
+  const cal = _climbCalForVariant(variantKey);
+  const sx = CW / cal.imgW;
+
+  const colTrace  = "rgba(0,0,0,0.85)";
+  const colDash   = [12, 8];
+  const colDot    = "#ffcc00";
+  const colResult = "#ff4444";
+  const colShadow = "rgba(255,255,255,0.85)";
+  const lw = 3.0, dr = 7;
+
+  const dot = (px, py, col, r) => {
+    ctx.beginPath(); ctx.arc(px, py, ((r || dr) + 2) * sx, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, (r || dr) * sx, 0, Math.PI * 2);
+    ctx.fillStyle = col; ctx.fill();
+  };
+  const line = (x1, y1, x2, y2, col, w, dash) => {
+    ctx.save(); ctx.beginPath();
+    ctx.strokeStyle = col; ctx.lineWidth = (w || lw) * sx;
+    ctx.setLineDash(dash ? dash.map(d => d * sx) : []);
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+  };
+  const lbl = (px, py, text, col, align, base) => {
+    ctx.save();
+    ctx.font = `bold ${Math.round(13 * sx)}px sans-serif`;
+    ctx.textAlign = align || "center"; ctx.textBaseline = base || "middle";
+    ctx.strokeStyle = colShadow; ctx.lineWidth = 4 * sx; ctx.lineJoin = "round";
+    ctx.strokeText(text, px, py);
+    ctx.fillStyle = col; ctx.fillText(text, px, py);
+    ctx.restore();
+  };
+
+  const rawRoc   = result.rawRoc;
+  const finalRoc = result.finalRoc;
+
+  // Upper panel: horizontal entry from left at OAT level → rawRoC point → drop to ref line
+  const pxRaw = _climbRoC2px(rawRoc, cal, CW);
+  const pyOAT = _climbOAT2py(oat, cal, CH);
+  const pyRef = (cal.yPxRefLine) * (CH / cal.imgH);
+  const pxLeft = (cal.rocMin < 0 ? cal.xPxNeg800 : cal.xPx0) * (CW / cal.imgW);
+
+  line(pxLeft, pyOAT, pxRaw, pyOAT, colTrace, lw, colDash);
+  dot(pxRaw, pyOAT, colDot);
+  line(pxRaw, pyOAT, pxRaw, pyRef, colTrace, lw, colDash);
+  dot(pxRaw, pyRef, colDot);
+
+  // Lower panel: diagonal from ref line at rawRoC to AUW level at finalRoC → drop to bottom
+  const pyAUW    = _climbMass2py(auw, cal, CH);
+  const pxFinal  = _climbRoC2px(finalRoc, cal, CW);
+  const pyBot    = cal.yBot * (CH / cal.imgH);
+
+  line(pxRaw, pyRef, pxFinal, pyAUW, colTrace, lw, colDash);
+  dot(pxFinal, pyAUW, colDot);
+  line(pxFinal, pyAUW, pxFinal, pyBot, colResult, lw, colDash);
+  dot(pxFinal, pyBot, colResult);
+
+  // Labels
+  lbl(pxLeft + 5 * sx, pyOAT - 12 * sx, `${oat}°C`,             colTrace,  "left",   "bottom");
+  lbl(pxRaw,            pyRef + 14 * sx, `${rawRoc} ft/min`,     colDot,    "center", "top");
+  lbl(pxFinal,          pyBot + 14 * sx, `${finalRoc} ft/min`,   colResult, "center", "top");
+}
+
+// Summary row shown below the chart thumbnail when expanded
+function _buildClimbSummaryRow(result, pa, oat, auw, label) {
+  if (!result || !result.ok || result.exceedsChart) return null;
+  return el("div", { class: "trace-summary" },
+    el("div", { class: "trace-summary__row" },
+      el("span", { class: "trace-summary__label" }, "PA"),
+      el("span", { class: "trace-summary__value" }, `${pa} ft`),
+    ),
+    el("div", { class: "trace-summary__row" },
+      el("span", { class: "trace-summary__label" }, "OAT"),
+      el("span", { class: "trace-summary__value" }, `${oat}°C`),
+    ),
+    el("div", { class: "trace-summary__row" },
+      el("span", { class: "trace-summary__label" }, "AUM"),
+      el("span", { class: "trace-summary__value" }, `${auw} kg`),
+    ),
+    el("div", { class: "trace-summary__row" },
+      el("span", { class: "trace-summary__label" }, "Raw RoC (ref line)"),
+      el("span", { class: "trace-summary__value" }, `${result.rawRoc} ft/min`),
+    ),
+    el("div", { class: "trace-summary__row trace-summary__row--result" },
+      el("span", { class: "trace-summary__label" }, `${label} RoC`),
+      el("span", { class: "trace-summary__value trace-summary__value--result" },
+        `${result.finalRoc} ft/min`),
+    ),
+  );
+}
+
+// ---- renderClimb -----------------------------------------------------------
+
+function renderClimb() {
+  const { auw, pa, oat } = STORE.climb;
+  const aiSuffix  = STORE.antiIce === "ON" ? "ai_on" : "ai_off";
+  const hasInputs = auw !== null && pa !== null && oat !== null;
+
+  // ---- AEO card -----------------------------------------------------------
+  const aeoBody = $("#climbAeoBody");
+  const aeoCard = $("#climbAeoCard");
+  if (aeoBody) {
+    clearEl(aeoBody);
+    if (!hasInputs) {
+      aeoBody.appendChild(el("p", { class: "muted" }, "Enter conditions above to calculate."));
+      if (aeoCard) aeoCard.classList.add("card--locked");
+    } else {
+      if (aeoCard) aeoCard.classList.remove("card--locked");
+      aeoBody.appendChild(_climbResultRow("MCP",    _climbLookup(`aeo_mcp_${aiSuffix}`,   pa, oat, auw)));
+      aeoBody.appendChild(_climbResultRow("30 Min", _climbLookup(`aeo_30min_${aiSuffix}`, pa, oat, auw)));
+    }
+  }
+
+  // ---- OEI card -----------------------------------------------------------
+  const oeiBody = $("#climbOeiBody");
+  const oeiCard = $("#climbOeiCard");
+  if (oeiBody) {
+    clearEl(oeiBody);
+    if (!hasInputs) {
+      oeiBody.appendChild(el("p", { class: "muted" }, "Enter conditions above to calculate."));
+      if (oeiCard) oeiCard.classList.add("card--locked");
+    } else {
+      if (oeiCard) oeiCard.classList.remove("card--locked");
+      oeiBody.appendChild(_climbResultRow("MCP",    _climbLookup(`oei_mcp_${aiSuffix}`,   pa, oat, auw)));
+      oeiBody.appendChild(_climbResultRow("30 Min", _climbLookup(`oei_30min_${aiSuffix}`, pa, oat, auw)));
+    }
+  }
+
+  // ---- Reference charts ---------------------------------------------------
+  renderClimbCharts(pa, oat, auw, aiSuffix, hasInputs);
+}
+
+// Rating label map — full label with abbreviation for climb result rows
+const CLIMB_RATING_LABELS = {
+  "MCP":    { abbr: "MCP",    full: "Max Continuous Power" },
+  "30 Min": { abbr: "30 MIN", full: "30 Min Intermediate"  },
+};
+
+function _climbResultRow(ratingLabel, result) {
+  const labelMeta = CLIMB_RATING_LABELS[ratingLabel] || { abbr: ratingLabel, full: "" };
+  const row = el("div", { class: "climb-result-row" });
+
+  // Label block: bold abbreviation + full name on second line
+  const labelBlock = el("div", { class: "climb-result-row__label" });
+  labelBlock.appendChild(el("span", { class: "climb-result-row__abbr" }, labelMeta.abbr));
+  if (labelMeta.full) {
+    labelBlock.appendChild(el("span", { class: "climb-result-row__full" }, labelMeta.full));
+  }
+  row.appendChild(labelBlock);
+
+  // Value block
+  const valBlock = el("div", { class: "climb-result-row__value" });
+
+  if (!result) {
+    valBlock.appendChild(el("span", { class: "muted" }, "—"));
+  } else if (!result.ok) {
+    if (result.reason === "cannot_climb") {
+      const isOei = result.xMin < 0;
+      const badge = isOei ? "DESCENT EXCEEDS CHART" : "CANNOT CLIMB";
+      const hint  = isOei
+        ? `Rate of descent exceeds ${Math.abs(result.xMin)} ft/min — rate is undefined on this chart.`
+        : "Cannot maintain any rate of climb — rate of descent is undefined on this chart.";
+      valBlock.appendChild(el("span", { class: "badge badge--bad" }, badge));
+      valBlock.appendChild(el("p", { class: "hint hint--bad" }, hint));
+    } else if (result.reason === "oat_above_max") {
+      valBlock.appendChild(el("span", { class: "badge badge--bad" }, "OAT EXCEEDS CHART"));
+      valBlock.appendChild(el("p", { class: "hint hint--bad" },
+        `OAT ${result.oat}°C exceeds ISA+25 limit of ${result.oatMax}°C for this PA.`));
+    } else if (result.reason === "auw_above_max") {
+      valBlock.appendChild(el("span", { class: "badge badge--bad" },
+        `AUM ${result.auw} kg exceeds ${result.maxMassKg} kg (Alt AUM)`));
+    } else if (result.reason === "chart_not_digitized") {
+      valBlock.appendChild(el("span", { class: "muted" }, "Chart not digitized"));
+    } else {
+      valBlock.appendChild(el("span", { class: "badge badge--warn" }, result.reason || "Error"));
+    }
+  } else if (result.exceedsChart) {
+    valBlock.appendChild(el("span", { class: "climb-result-row__roc" }, `> ${result.xMax}`));
+    valBlock.appendChild(el("span", { class: "climb-result-row__unit" }, "ft/min"));
+    valBlock.appendChild(el("span", { class: "badge badge--warn climb-result-row__badge" }, "EXCEEDS CHART"));
+    valBlock.appendChild(el("p", { class: "hint hint--warn" },
+      `Rate of climb exceeds ${result.xMax} ft/min — exact rate is undefined on this chart.`));
+  } else {
+    valBlock.appendChild(el("span", { class: "climb-result-row__roc" }, `${result.finalRoc}`));
+    valBlock.appendChild(el("span", { class: "climb-result-row__unit" }, "ft/min"));
+    if (result.extrapolationWarning) {
+      valBlock.appendChild(el("span", { class: "badge badge--warn climb-result-row__badge" }, "EXTRAP"));
+    }
+  }
+
+  row.appendChild(valBlock);
+  return row;
+}
+
+function renderClimbCharts(pa, oat, auw, aiSuffix, hasInputs) {
+  const card = $("#climbChartsCard");
+  const body = $("#climbChartsBody");
+  if (!card || !body) return;
+  if (!hasInputs) { card.hidden = true; return; }
+
+  const climbImgs = AC.chartImages && AC.chartImages.climb;
+  if (!climbImgs) { card.hidden = true; return; }
+
+  const variants = [
+    { key: `aeo_mcp_${aiSuffix}`,    label: "AEO MCP"    },
+    { key: `aeo_30min_${aiSuffix}`,  label: "AEO 30 Min" },
+    { key: `oei_mcp_${aiSuffix}`,    label: "OEI MCP"    },
+    { key: `oei_30min_${aiSuffix}`,  label: "OEI 30 Min" },
+  ];
+
+  clearEl(body);
+  const list = el("div", { class: "chart-refs" });
+  let anyAdded = false;
+
+  variants.forEach(({ key, label }) => {
+    const imgMeta = climbImgs[key];
+    if (!imgMeta) return;
+
+    const imgEntry = {
+      src:        imgMeta.src,
+      fig:        imgMeta.fig,
+      title:      imgMeta.title,
+      commonName: label,
+    };
+
+    const result    = _climbLookup(key, pa, oat, auw);
+    const traceFn   = (result && result.ok && !result.exceedsChart)
+      ? (canvas) => _drawClimbTrace(canvas, result, pa, oat, auw, key)
+      : null;
+    const summaryFn = (result && result.ok && !result.exceedsChart)
+      ? () => _buildClimbSummaryRow(result, pa, oat, auw, label)
+      : null;
+
+    const d = buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn);
+    if (d) { list.appendChild(d); anyAdded = true; }
+  });
+
+  if (!anyAdded) { card.hidden = true; return; }
+  body.appendChild(list);
+  card.hidden = false;
+}
+
 
 function renderFuel() {
   renderFuelLog();
@@ -3525,14 +3957,34 @@ function init() {
     });
   });
 
-  // Hover Performance Anti-Ice toggle
+  // Max Mass to Hover Anti-Ice toggle
   $$("[data-hov-ai]").forEach(btn => {
     if (btn) btn.addEventListener("click", () => {
       setAntiIce(btn.dataset.hovAi);
     });
   });
 
-  // Hover Performance: condition fields
+  // Climb Performance Anti-Ice toggle
+  $$("[data-climb-ai]").forEach(btn => {
+    if (btn) btn.addEventListener("click", () => {
+      setAntiIce(btn.dataset.climbAi);
+    });
+  });
+
+  // Climb Performance: condition fields
+  const climbBind = (id, prop) => {
+    const input = $(id);
+    if (!input) return;
+    input.addEventListener("input", (e) => {
+      STORE.climb[prop] = num(e.target.value);
+      renderClimb();
+    });
+  };
+  climbBind("#climbAuwInput", "auw");
+  climbBind("#climbPaInput",  "pa");
+  climbBind("#climbOatInput", "oat");
+
+  // Max Mass to Hover: condition fields
   // Guard against null — throws and kills init() if index.html lacks the hover panel
   const hovBind = (id, prop) => {
     const input = $(id);

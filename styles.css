@@ -1719,3 +1719,96 @@ body.theme-light .splash__disclaimer {
   color: var(--accent, #7eb8f7);
   margin-right: 2px;
 }
+/* ============================================================================
+   Climb tab — result rows
+   ============================================================================ */
+
+/* Card title: bold abbreviation + lighter subtitle on same line */
+.card__title strong {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-right: 6px;
+}
+.card__title-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+/* Each rating row: label stack on left, big value on right */
+.climb-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.climb-result-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.climb-result-row:first-child {
+  padding-top: 0;
+}
+
+/* Label block */
+.climb-result-row__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.climb-result-row__abbr {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.climb-result-row__full {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Value block */
+.climb-result-row__value {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.climb-result-row__roc {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--good);
+  line-height: 1;
+}
+.climb-result-row__unit {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+  align-self: flex-end;
+  padding-bottom: 3px;
+}
+.climb-result-row__badge {
+  align-self: center;
+}
+
+/* Hint text in value block */
+.hint--bad  { color: var(--bad);  font-size: 11px; margin: 4px 0 0; width: 100%; text-align: right; }
+.hint--warn { color: var(--warn); font-size: 11px; margin: 4px 0 0; width: 100%; text-align: right; }
+
+/* Splash update hint — below enter button */
+.splash__update-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}

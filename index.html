@@ -22,13 +22,13 @@
     <div class="splash__inner">
 
       <div class="splash__photo-wrap">
-        <img class="splash__photo" src="images/SPLASH_PG_SSN.png" alt="Shawn St Nicolaas" draggable="false">
+        <img class="splash__photo" src="images/SPLASH_PG_SSN.png" alt="CH-149 Cormorant" draggable="false">
       </div>
 
       <div class="splash__title-block">
         <div class="splash__aircraft">CH-149-511</div>
         <div class="splash__appname">Performance Calculator</div>
-        <div class="splash__credit">Built by Shawn St Nicolaas</div>
+        
         <div class="splash__version" id="splashVersion"></div>
       </div>
 
@@ -58,10 +58,11 @@
       <button class="splash__accept btn" id="splashAcceptBtn" type="button">
         I Understand &mdash; Enter Application
       </button>
+      <p class="splash__update-hint">If this button does not respond, an update is available &mdash; swipe the app fully closed and relaunch to update.</p>
 
       <div class="splash__whatsnew">
         <span class="splash__whatsnew-label" id="splashWhatsNewVersion"></span>
-        Trace overlays now align correctly on iPhone, iPad, and Android.
+        Climb Performance tab added (Rate of Climb at 75 KIAS, AEO and OEI, MCP and 30 Min). Hover Performance tab renamed to Max Mass to Hover.
       </div>
 
     </div>
@@ -90,7 +91,8 @@
       <button class="tab"              role="tab" aria-selected="false" data-tab="pa">Power Assurance</button>
       <button class="tab"              role="tab" aria-selected="false" data-tab="sarcb">SAR Check Performance Brief</button>
       <button class="tab"              role="tab" aria-selected="false" data-tab="fuel">Fuel Burn</button>
-      <button class="tab"              role="tab" aria-selected="false" data-tab="hover">Hover Performance</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="hover">Max Mass to Hover</button>
+      <button class="tab"              role="tab" aria-selected="false" data-tab="climb">Climb Performance</button>
     </nav>
 
     <!-- ===== Pre-Take Off panel ================================= -->
@@ -367,7 +369,7 @@
             </div>
           </div>
           <p class="muted hint">Enter HOGE from the aircraft computer, or use Calculate to derive it from the AFM chart. DA is computed from PA + OAT (ICAO ISA).</p>
-          <button class="pull-btn" type="button" id="pullHoverToSarBtn" hidden>↓ Pull from Hover Performance</button>
+          <button class="pull-btn" type="button" id="pullHoverToSarBtn" hidden>↓ Pull from Max Mass to Hover</button>
         </div>
       </div>
 
@@ -490,8 +492,8 @@
     </section>
 
 
-    <!-- ===== Hover Performance panel ============================ -->
-    <section class="tab-panel" id="hoverPanel" role="tabpanel" aria-label="Hover Performance" hidden>
+    <!-- ===== Max Mass to Hover panel ============================ -->
+    <section class="tab-panel" id="hoverPanel" role="tabpanel" aria-label="Max Mass to Hover" hidden>
 
       <!-- Conditions -->
       <div class="card">
@@ -603,10 +605,93 @@
 
     </section>
 
+    <!-- ===== Climb Performance panel ================================ -->
+    <section class="tab-panel" id="climbPanel" role="tabpanel" aria-label="Climb Performance" hidden>
+
+      <!-- Conditions -->
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">Conditions</h2>
+          <button class="clear-btn" type="button" data-clear-tab="climb">Clear</button>
+        </div>
+        <div class="card__body">
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field__label" for="climbAuwInput">AUM</label>
+              <div class="field__input-wrap">
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="climbAuwInput" placeholder="—">
+                <span class="field__unit">kg</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="climbPaInput">PA</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="climbPaInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="100" id="climbPaInput" placeholder="—">
+                <span class="field__unit">ft</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="climbOatInput">OAT</label>
+              <div class="field__input-wrap">
+                <button class="sign-toggle" type="button" data-sign-for="climbOatInput" aria-label="Toggle negative">±</button>
+                <input class="field__input mono" type="number" inputmode="numeric" step="1" id="climbOatInput" placeholder="—">
+                <span class="field__unit">°C</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="seg-row">
+            <span class="field__label">Engine Anti-Ice</span>
+            <div class="seg" role="radiogroup" aria-label="Engine Anti-Ice state">
+              <button class="seg__btn seg__btn--active" data-climb-ai="OFF" type="button" role="radio" aria-checked="true">AI OFF</button>
+              <button class="seg__btn"                  data-climb-ai="ON"  type="button" role="radio" aria-checked="false">AI ON</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Results (side by side) -->
+      <div class="hov-results-row">
+        <div class="card card--locked" id="climbAeoCard">
+          <div class="card__header">
+            <h2 class="card__title"><strong>AEO</strong> <span class="card__title-sub">All Engines Operating</span></h2>
+          </div>
+          <div class="card__body" id="climbAeoBody">
+            <p class="muted">Enter conditions above to calculate.</p>
+          </div>
+        </div>
+        <div class="card card--locked" id="climbOeiCard">
+          <div class="card__header">
+            <h2 class="card__title"><strong>OEI</strong> <span class="card__title-sub">One Engine Inoperative</span></h2>
+          </div>
+          <div class="card__body" id="climbOeiBody">
+            <p class="muted">Enter conditions above to calculate.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference Charts -->
+      <div class="card" id="climbChartsCard" hidden>
+        <div class="card__header">
+          <h2 class="card__title">Reference Charts</h2>
+        </div>
+        <div class="card__body" id="climbChartsBody"></div>
+      </div>
+
+      <div class="tab-disclaimer">
+        <span class="tab-disclaimer__icon">&#9888;&#65039;</span>
+        Values are interpolated from digitised AFM charts. At close margins, verify with a hand trace of the applicable AFM figure.
+      </div>
+
+    </section>
+
   </main>
 
   <footer class="app-footer">
-    <span class="muted" id="footerVersion">— Pre-Take Off Brief · Power Assurance · SAR Check Performance Brief · Fuel Burn · Hover Performance.</span>
+    <span class="muted" id="footerVersion">— Pre-Take Off Brief · Power Assurance · SAR Check Performance Brief · Fuel Burn · Max Mass to Hover · Climb Performance.</span>
   </footer>
 
   <script>
