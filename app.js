@@ -387,7 +387,7 @@ function syncAntiIceButtons() {
 function setAntiIce(state) {
   STORE.antiIce = state;
   syncAntiIceButtons();
-  rerender();
+  if (STORE.sarCheck.hogeSource === "chart") deriveHOGEFromChart(); else rerender();
 }
 
 function toggleAntiIce() {
@@ -714,6 +714,8 @@ function applyLocks() {
   const stage = currentStage();
   $("#enginesCard").classList.toggle("card--locked", stage < 4);
   $("#summaryCard").classList.toggle("card--locked", stage < 4);
+  const copyBtn = $("#paCopyBtn");
+  if (copyBtn) copyBtn.hidden = (stage < 4);
 }
 
 function currentStage() {
@@ -926,7 +928,7 @@ function _buildPASummaryRow(result, engTq, pa, oat) {
       el("span", { class: "trace-summary__value" }, `${engTq.toFixed(1)} %Q`),
     ),
     el("div", { class: "trace-summary__row" },
-      el("span", { class: "trace-summary__label" }, "Pressure Altitude"),
+      el("span", { class: "trace-summary__label" }, "Press Alt"),
       el("span", { class: "trace-summary__value" }, `${pa} ft`),
     ),
     el("div", { class: "trace-summary__row" },
@@ -964,6 +966,66 @@ function buildPAChartDetailsWithTrace(imgEntry, result, engTq, pa, oat, traceCon
 }
 
 
+
+function copyPAToClipboard() {
+  const pa   = STORE.powerAssurance;
+  const mode = MODE_LABELS[pa.mode] || pa.mode;
+  const paFt = pa.pa !== null ? `${pa.pa} ft` : "—";
+  const oat  = pa.oat !== null ? `${pa.oat}°C` : "—";
+
+  const engLines = [1, 2, 3].map(n => {
+    const e = pa.engines[n];
+    if (e.engTq === null) {
+      return `  Eng #${n}  Q: —  Chart TIT: —  Eng TIT: —  Margin: —`;
+    }
+    const r = computeEnginePA({
+      engineNum: n,
+      eng_tq:   e.engTq,
+      eng_tit:  e.engTit,
+      pa:       pa.pa,
+      oat:      pa.oat,
+      onGround: pa.mode === "onGround",
+    });
+    if (!r.ok) {
+      return `  Eng #${n}  Q: ${e.engTq.toFixed(1)}%Q  Chart TIT: —  Eng TIT: —  Margin: — (out of envelope)`;
+    }
+    const tq      = `${e.engTq.toFixed(1)}%Q`;
+    const chart   = fmtTIT(r.chartTIT);  // mode-aware: includes ground correction when onGround
+    const engTIT  = e.engTit !== null ? fmtTIT(e.engTit) : "—";
+    const margin  = r.margin !== null ? fmtMargin(r.margin) : "—";
+    const result  = r.pass === true ? "PASS" : r.pass === false ? "FAIL" : "—";
+    return `  Eng #${n}  Q: ${tq}  Chart TIT: ${chart}  Eng TIT: ${engTIT}  Margin: ${margin}  ${result}`;
+  });
+
+  const text = [
+    "CH-149-511 POWER ASSURANCE",
+    "─────────────────────────────",
+    `Conditions:   ${mode}`,
+    `Press Alt:    ${paFt}`,
+    `OAT:          ${oat}`,
+    "─────────────────────────────",
+    ...engLines,
+    "─────────────────────────────",
+  ].join("\n");
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = $("#paCopyBtn");
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = "Copied";
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+  }).catch(() => {
+    // Fallback for environments where clipboard API is unavailable
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  });
+}
 
 function renderPACharts() {
   const card = $("#paChartsCard");
@@ -1313,7 +1375,7 @@ function renderSARCheckHOGE() {
       table.appendChild(workingSheetRow("SR", srDisplay.text, { muted: srDisplay.muted }));
     }
 
-    if (pa   !== null) table.appendChild(workingSheetRow("PA",   `${pa} ft`));
+    if (pa   !== null) table.appendChild(workingSheetRow("Press Alt",   `${pa} ft`));
     if (oat  !== null) table.appendChild(workingSheetRow("TEMP", `${oat}°C`));
     if (wind !== null) table.appendChild(workingSheetRow("WIND", `${wind} kt headwind`));
 
@@ -2165,8 +2227,7 @@ function _drawHovTrace(canvas, result, oat, wind, tm, rating, aiOn) {
     ctx.restore();
   };
 
-  // Panel 1: vertical entry at baseMass from top, horizontal left to OAT entry
-  line(pxBase, pyTop,  pxBase, pyOAT,  t.colTrace, t.lineWidth, t.colTraceDash);
+  // Panel 1: horizontal from left edge to OAT/PA intersection
   line(pxLeft, pyOAT,  pxBase, pyOAT,  t.colTrace, t.lineWidth, t.colTraceDash);
   dot(pxBase,  pyOAT,  t.colDot);
 
@@ -2174,23 +2235,24 @@ function _drawHovTrace(canvas, result, oat, wind, tm, rating, aiOn) {
   line(pxBase, pyOAT,  pxBase, pyWRef, t.colTrace, t.lineWidth, t.colTraceDash);
   dot(pxBase,  pyWRef, t.colDot);
 
-  // Panel 2: horizontal at wind height, drop to result
+  // Panel 2: diagonal along correction curve from ref line to wind intersection,
+  //           then vertical drop to TM ref line
   if (windKt > 0) {
-    line(pxBase, pyWind, pxWind, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
-    dot(pxBase,  pyWind, t.colDot);
-    line(pxWind, pyWind, pxWind, pyTMRef, t.colTrace, t.lineWidth, t.colTraceDash);
-    dot(pxWind,  pyWind, t.colDot);
+    line(pxBase, pyWRef,  pxWind, pyWind,  t.colTrace, t.lineWidth, t.colTraceDash);
+    dot(pxWind,  pyWind,  t.colDot);
+    line(pxWind, pyWind,  pxWind, pyTMRef, t.colTrace, t.lineWidth, t.colTraceDash);
   } else {
     line(pxBase, pyWRef, pxBase, pyTMRef, t.colTrace, t.lineWidth, t.colTraceDash);
   }
   dot(pxWind, pyTMRef, t.colDot);
 
-  // Panel 3: horizontal at TM height, drop to final result
+  // Panel 3: diagonal along correction curve from TM ref line to TM intersection,
+  //           then vertical drop to bottom axis
   if (tmPct > 0) {
-    line(pxWind,  pyTM,   pxFinal, pyTM,   t.colTrace, t.lineWidth, t.colTraceDash);
-    dot(pxWind,   pyTM,   t.colDot);
-    line(pxFinal, pyTM,   pxFinal, pyBot,  t.colResult, t.lineWidth, t.colTraceDash);
-    dot(pxFinal,  pyTM,   t.colResult, t.dotRadius+3);
+    line(pxWind,  pyTMRef, pxFinal, pyTM,   t.colTrace,  t.lineWidth, t.colTraceDash);
+    dot(pxFinal,  pyTM,    t.colDot);
+    line(pxFinal, pyTM,    pxFinal, pyBot,  t.colResult, t.lineWidth, t.colTraceDash);
+    dot(pxFinal,  pyTM,    t.colResult, t.dotRadius+3);
   } else {
     line(pxWind, pyTMRef, pxWind, pyBot, t.colResult, t.lineWidth, t.colTraceDash);
   }
@@ -2296,7 +2358,7 @@ function renderHover() {
     result30 = getMaxMassToHover({ pa, oat, wind: wind ?? 0, tm: tm ?? 0, antiIce, rating: "thirtyMin" });
   }
 
-  renderHoverWorking(resultMC, result30, auw, wind ?? 0, tm ?? 0);
+  // renderHoverWorking(resultMC, result30, auw, wind ?? 0, tm ?? 0);  // hidden — brief + traces sufficient
   renderHoverResultPane(resultMC, auw, "#hovResultCard",      "#hovResultBody",      "Max Continuous");
   renderHoverResultPane(result30, auw, "#hovResultCard30Min", "#hovResultBody30Min", "30 Min Intermediate");
   renderHoverCharts(resultMC, result30, oat, wind ?? 0, tm ?? 0);
@@ -2511,7 +2573,7 @@ function _buildAnnexBSummaryRow(result, aiOn) {
   const correctedQ  = refQ - aiOnPenalty;
   return el("div", { class: "trace-summary" },
     el("div", { class: "trace-summary__row" },
-      el("span", { class: "trace-summary__label" }, "Pressure Altitude"),
+      el("span", { class: "trace-summary__label" }, "Press Alt"),
       el("span", { class: "trace-summary__value" }, `${tracePA} ft`),
     ),
     el("div", { class: "trace-summary__row" },
@@ -2657,9 +2719,9 @@ function _drawHOGETrace(canvas, hogeResult, wind, aiOn) {
 
   // Lower panel
   if (windKt > 0) {
-    // Horizontal at wind height from Q_ref to Q_final
-    line(pxQref,  pyWind, pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
-    dot(pxQref,   pyWind, t.colDot);
+    // Diagonal from ref line at Q_ref to wind curve intersection at Q_final
+    line(pxQref,  pyJoin, pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
+    dot(pxFinal,  pyWind, t.colDot);
     // Drop from wind intersection to bottom
     line(pxFinal, pyWind, pxFinal, pyBot, t.colResult, t.lineWidth, t.colTraceDash);
     dot(pxFinal,  pyWind, t.colResult, t.dotRadius + 3);
@@ -2817,7 +2879,7 @@ function _buildTVSummaryRow(tvResult, oat, pa) {
   const { tv, da } = tvResult;
   return el("div", { class: "trace-summary" },
     el("div", { class: "trace-summary__row" },
-      el("span", { class: "trace-summary__label" }, "Pressure Altitude"),
+      el("span", { class: "trace-summary__label" }, "Press Alt"),
       el("span", { class: "trace-summary__value" }, `${pa} ft`),
     ),
     el("div", { class: "trace-summary__row" },
@@ -2903,15 +2965,113 @@ function _srWind2py(kt, t) {
 }
 
 function _drawSRTrace(canvas, srResult, wind, aiOn) {
-  if (!srResult || !srResult.ok || srResult.anyHeight) return;
+  if (!srResult || !srResult.ok) return;
   const ctx = canvas.getContext("2d");
   const CW = canvas.width, CH = canvas.height;
   ctx.clearRect(0, 0, CW, CH);
   const t  = _srTrace(aiOn);
   const sx = CW / t.imgW;
   const sy = CH / t.imgH;
-  const { tv, xRef, srFt } = srResult;
+  const { tv, xRef, srFt, anyHeight } = srResult;
   const windKt = (wind === null || wind === undefined) ? 0 : wind;
+
+  // ANY HEIGHT — upper panel exit: TV line runs off the right edge of the chart.
+  // Green throughout — ANY HEIGHT is the favourable outcome.
+  if (anyHeight && xRef === null) {
+    const colGreen = "#35d07f";
+    const colShadow = t.colShadow;
+    const pyTV   = _srTV2py(tv, t) * sy;
+    const pxLeft = (t.xSR0  - 15) * sx;
+    const pxExit = (t.xSR80 + 40) * sx;   // overshoot right edge
+    const pyTop  = (t.yTV14 - 30) * sy;
+    const pyBot  = (t.yWind30 + 30) * sy;
+    ctx.save(); ctx.beginPath();
+    ctx.strokeStyle = colGreen;
+    ctx.lineWidth   = t.lineWidth * sx;
+    ctx.setLineDash(t.colTraceDash.map(d => d * sx));
+    ctx.moveTo(pxLeft, pyTV); ctx.lineTo(pxExit, pyTV); ctx.stroke(); ctx.restore();
+    // Arrowhead at exit
+    ctx.save(); ctx.beginPath();
+    ctx.fillStyle = colGreen;
+    ctx.moveTo(pxExit,          pyTV);
+    ctx.lineTo(pxExit - 14*sx,  pyTV - 7*sx);
+    ctx.lineTo(pxExit - 14*sx,  pyTV + 7*sx);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+    // Label
+    ctx.save();
+    ctx.font = `bold ${Math.round(13*sx)}px sans-serif`;
+    ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+    ctx.strokeStyle = colShadow; ctx.lineWidth = 4*sx; ctx.lineJoin = "round";
+    ctx.strokeText(`TV ${tv.toFixed(1)} — ANY HEIGHT`, pxLeft + (pxExit - pxLeft) * 0.6, pyTV - 8*sy);
+    ctx.fillStyle = colGreen;
+    ctx.fillText(`TV ${tv.toFixed(1)} — ANY HEIGHT`, pxLeft + (pxExit - pxLeft) * 0.6, pyTV - 8*sy);
+    ctx.restore();
+    return;
+  }
+
+  // ANY HEIGHT — lower panel exit: full upper panel + wind diagonal runs off right edge.
+  // Green throughout.
+  if (anyHeight && xRef !== null) {
+    const colGreen  = "#35d07f";
+    const colShadow = t.colShadow;
+    const pxXRef  = _srSR2px(xRef, t) * sx;
+    const pyTV    = _srTV2py(tv,   t) * sy;
+    const pyJoin  = t.yWind0           * sy;
+    const pyWind  = _srWind2py(windKt, t) * sy;
+    const pxLeft  = (t.xSR0   - 15) * sx;
+    const pxExit  = (t.xSR80  + 40) * sx;   // overshoot right edge
+
+    const dot = (px, py) => {
+      ctx.beginPath(); ctx.arc(px, py, (t.dotRadius + 2) * sx, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.45)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py, t.dotRadius * sx, 0, Math.PI * 2);
+      ctx.fillStyle = colGreen; ctx.fill();
+    };
+    const line = (x1, y1, x2, y2) => {
+      ctx.save(); ctx.beginPath();
+      ctx.strokeStyle = colGreen; ctx.lineWidth = t.lineWidth * sx;
+      ctx.setLineDash(t.colTraceDash.map(d => d * sx));
+      ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+    };
+    const lbl = (px, py, text, align, base) => {
+      ctx.save();
+      ctx.font = `bold ${Math.round(13*sx)}px sans-serif`;
+      ctx.textAlign = align || "center"; ctx.textBaseline = base || "middle";
+      ctx.strokeStyle = colShadow; ctx.lineWidth = 4*sx; ctx.lineJoin = "round";
+      ctx.strokeText(text, px, py); ctx.fillStyle = colGreen; ctx.fillText(text, px, py);
+      ctx.restore();
+    };
+
+    // Upper panel
+    line(pxLeft, pyTV, pxXRef, pyTV);
+    dot(pxXRef, pyTV);
+    line(pxXRef, pyTV, pxXRef, pyJoin);
+    dot(pxXRef, pyJoin);
+
+    // Lower panel — diagonal exits right edge
+    // Find where the diagonal (from pxXRef,pyJoin toward pxExit,pyWind) crosses pxExit
+    // Since we're drawing to pxExit already, just extend the line to pxExit
+    // and overshoot the y proportionally
+    const dX = pxExit - pxXRef;
+    const dY = pyWind  - pyJoin;
+    const exitY = pyJoin + dY;   // y at pxExit (natural diagonal endpoint)
+    line(pxXRef, pyJoin, pxExit, exitY);
+    // Arrowhead at exit
+    const angle = Math.atan2(dY, dX);
+    ctx.save(); ctx.beginPath();
+    ctx.fillStyle = colGreen;
+    ctx.translate(pxExit, exitY);
+    ctx.rotate(angle);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-14*sx, -7*sx);
+    ctx.lineTo(-14*sx,  7*sx);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+
+    // Labels
+    lbl(pxXRef - 10*sx, pyTV  - 12*sy, `TV ${tv.toFixed(1)}`, "right", "bottom");
+    lbl(pxXRef,          pyJoin + 14*sy, `${Math.round(xRef)} ft — ANY HEIGHT`, "center", "top");
+    return;
+  }
 
   const pxXRef  = _srSR2px(xRef,  t) * sx;
   const pxFinal = _srSR2px(srFt,  t) * sx;
@@ -2956,7 +3116,8 @@ function _drawSRTrace(canvas, srResult, wind, aiOn) {
   line(pxXRef, pyTV, pxXRef, pyJoin, t.colTrace, t.lineWidth, t.colTraceDash);
   dot(pxXRef, pyJoin, t.colDot);
 
-  // Lower panel
+  // Lower panel — right-angle steps: the SR wind correction curves are complex
+  // (U-shaped in places) so a diagonal approximation would be misleading.
   if (windKt > 0) {
     line(pxXRef,  pyWind, pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
     dot(pxXRef,   pyWind, t.colDot);
@@ -3002,11 +3163,15 @@ function _buildSRSummaryRow(srResult, wind) {
       el("span", { class: "trace-summary__label" }, "Max Vertical Reject Ht"),
       el("span", { class: "trace-summary__value trace-summary__value--result" }, `${srFt} ft`),
     ),
+    windKt > 0 && el("div", { class: "trace-summary__row" },
+      el("span", { class: "trace-summary__label muted", style: "font-size:0.8em" },
+        "Note: SR wind correction curves are complex — trace shows reference points only, not the curve path."),
+    ),
   );
 }
 
 function buildSRChartDetailsWithTrace(imgEntry, srResult, wind, aiOn) {
-  const traceFn   = (srResult && srResult.ok && !srResult.anyHeight)
+  const traceFn   = (srResult && srResult.ok)
     ? (canvas) => _drawSRTrace(canvas, srResult, wind, aiOn)
     : null;
   const summaryFn = (srResult && srResult.ok)
@@ -3151,8 +3316,9 @@ function _drawHLDFTrace(canvas, hlResult, wind, aiOn) {
 
   // Panel 2
   if (windKt > 0) {
-    line(pxXRef,  pyWind, pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
-    dot(pxXRef,  pyWind, t.colDot);
+    // Diagonal from ref line at xRef to wind curve intersection at final X
+    line(pxXRef,  pyRef,  pxFinal, pyWind, t.colTrace, t.lineWidth, t.colTraceDash);
+    dot(pxFinal,  pyWind, t.colDot);
     line(pxFinal, pyWind, pxFinal, pyBot, t.colResult, t.lineWidth, t.colTraceDash);
     dot(pxFinal,  pyWind, t.colResult, t.dotRadius + 3);
   } else {
@@ -3490,7 +3656,7 @@ function _buildClimbSummaryRow(result, pa, oat, auw, label) {
   if (!result || !result.ok || result.exceedsChart) return null;
   return el("div", { class: "trace-summary" },
     el("div", { class: "trace-summary__row" },
-      el("span", { class: "trace-summary__label" }, "PA"),
+      el("span", { class: "trace-summary__label" }, "Press Alt"),
       el("span", { class: "trace-summary__value" }, `${pa} ft`),
     ),
     el("div", { class: "trace-summary__row" },
@@ -4096,22 +4262,22 @@ function init() {
   $("#sarcbAuwInput").addEventListener("input", (e) => {
     STORE.sarCheck.auw = num(e.target.value);
     snapshotSARCheck();
-    rerender();
+    if (STORE.sarCheck.hogeSource === "chart") deriveHOGEFromChart(); else rerender();
   });
   $("#sarcbPaInput").addEventListener("input", (e) => {
     STORE.sarCheck.pa = num(e.target.value);
     snapshotSARCheck();
-    rerender();
+    if (STORE.sarCheck.hogeSource === "chart") deriveHOGEFromChart(); else rerender();
   });
   $("#sarcbOatInput").addEventListener("input", (e) => {
     STORE.sarCheck.oat = num(e.target.value);
     snapshotSARCheck();
-    rerender();
+    if (STORE.sarCheck.hogeSource === "chart") deriveHOGEFromChart(); else rerender();
   });
   $("#sarcbWindInput").addEventListener("input", (e) => {
     STORE.sarCheck.wind = num(e.target.value);
     snapshotSARCheck();
-    rerender();
+    if (STORE.sarCheck.hogeSource === "chart") deriveHOGEFromChart(); else rerender();
   });
 
   // SAR Check: HOGE — pilot entry (clears chart source)

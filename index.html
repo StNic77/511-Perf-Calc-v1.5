@@ -62,7 +62,7 @@
 
       <div class="splash__whatsnew">
         <span class="splash__whatsnew-label" id="splashWhatsNewVersion"></span>
-        Climb Performance tab added (Rate of Climb at 75 KIAS, AEO and OEI, MCP and 30 Min). Hover Performance tab renamed to Max Mass to Hover.
+Trace improvements: correction curves on HOGE, HLDF, and Max Mass to Hover now draw diagonally, matching how a pencil follows the chart. The SR Wind Correction Curves are complex and the trace uses right angles to show those corrections. Safe Reject any-height conditions now show a green trace explaining why — TV or wind correction exits the chart envelope. Max Mass to Hover Thrust Margin correction bug fixed: TM panel was silently not applying, results are now correct. Power Assurance: Copy to Clipboard button captures conditions and all three engine results in a format ready to transcribe to MRS or email. Chart band note added (−1,000–1,000 ft and 2,000–4,000 ft digitized; other altitudes require paper charts). Press Alt label standardised across all tabs. Max Mass to Hover working sheet hidden; brief card and chart traces cover the same ground more clearly.
       </div>
 
     </div>
@@ -101,7 +101,7 @@
       <!-- PA Calculator from elevation + QNH -->
       <div class="card">
         <div class="card__header">
-          <h2 class="card__title">PA Calculator <span class="card__title-sub">optional</span></h2>
+          <h2 class="card__title">Press Alt Calculator <span class="card__title-sub">optional</span></h2>
         </div>
         <div class="card__body">
           <p class="hint">Enter airfield elevation and altimeter setting to compute Pressure Altitude.</p>
@@ -149,7 +149,7 @@
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="pretooffPaInput">PA</label>
+              <label class="field__label" for="pretooffPaInput">Press Alt</label>
               <div class="field__input-wrap">
                 <button class="sign-toggle" type="button" data-sign-for="pretooffPaInput" aria-label="Toggle negative">±</button>
                 <input class="field__input mono" type="number" inputmode="numeric" step="100" id="pretooffPaInput" placeholder="—">
@@ -252,7 +252,7 @@
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="paInput">PA</label>
+              <label class="field__label" for="paInput">Press Alt</label>
               <div class="field__input-wrap">
                 <button class="sign-toggle" type="button" data-sign-for="paInput" aria-label="Toggle negative">±</button>
                 <input class="field__input mono" type="number" inputmode="numeric" step="100" id="paInput" placeholder="—">
@@ -261,6 +261,7 @@
             </div>
           </div>
           <p class="muted" id="conditionsHint">Shared across all three engines.</p>
+          <p class="hint">Digitized chart bands: −1,000 to 1,000 ft and 2,000 to 4,000 ft Press Alt. Altitudes outside these bands require the paper charts.</p>
           <button class="pull-btn" type="button" id="pullPretoToPaBtn" hidden>↓ Pull from Pre-Takeoff</button>
         </div>
       </div>
@@ -270,6 +271,7 @@
         <div class="card__header">
           <span class="step-num">4</span>
           <h2 class="card__title">Engine Readings</h2>
+          <button class="btn btn--sm" id="paCopyBtn" onclick="copyPAToClipboard()" hidden>Copy</button>
         </div>
         <div class="card__body">
           <div class="engines"></div>
@@ -329,7 +331,7 @@
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="sarcbPaInput">PA</label>
+              <label class="field__label" for="sarcbPaInput">Press Alt</label>
               <div class="field__input-wrap">
                 <button class="sign-toggle" type="button" data-sign-for="sarcbPaInput" aria-label="Toggle negative">±</button>
                 <input class="field__input mono" type="number" inputmode="numeric" step="100" id="sarcbPaInput" placeholder="—">
@@ -512,7 +514,7 @@
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="hovPaInput">PA</label>
+              <label class="field__label" for="hovPaInput">Press Alt</label>
               <div class="field__input-wrap">
                 <button class="sign-toggle" type="button" data-sign-for="hovPaInput" aria-label="Toggle negative">±</button>
                 <input class="field__input mono" type="number" inputmode="numeric" step="100" id="hovPaInput" placeholder="—">
@@ -560,8 +562,8 @@
         </div>
       </div>
 
-      <!-- Working Sheet -->
-      <div class="card card--locked" id="hovWorkingCard">
+      <!-- Working Sheet — hidden; brief + traces sufficient. Restore by removing hidden attribute. -->
+      <div class="card card--locked" id="hovWorkingCard" hidden>
         <div class="card__header">
           <h2 class="card__title">Working Sheet</h2>
         </div>
@@ -625,7 +627,7 @@
               </div>
             </div>
             <div class="field">
-              <label class="field__label" for="climbPaInput">PA</label>
+              <label class="field__label" for="climbPaInput">Press Alt</label>
               <div class="field__input-wrap">
                 <button class="sign-toggle" type="button" data-sign-for="climbPaInput" aria-label="Toggle negative">±</button>
                 <input class="field__input mono" type="number" inputmode="numeric" step="100" id="climbPaInput" placeholder="—">
