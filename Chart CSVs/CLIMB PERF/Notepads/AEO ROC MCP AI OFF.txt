@@ -1,0 +1,16 @@
+AEO RoC MCP AI OFF 1700x2200px
+Figure 4-79 AEO Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF)
+45C y= 44.9999999 top of the y axis in the top panel
+-50C y=-50.00000 bottom of the y axis in the top panel
+0C y=-2.544
+4C y= 1.228
+Ref line 13000kg AUM y=-112.982
+10000kg y=-55.789 top of the y axis in the bottom panel
+11000kg y=-74.825
+14600kg y= -143.333 Max AUW
+15600kg y= -162.193 Alt AUW
+16000kg y= -169.912 bottom of the y axis in the bottom panel
+0ft/min x= 0.000
+600 ft/min x=600.922
+1600ft/min x=1598.157
+3200ft/min x=3200.000

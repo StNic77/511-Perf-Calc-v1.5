@@ -1,0 +1,16 @@
+OEI RoC 30MIN AI OFF 1700x2200px
+Figure 4-84 OEI Rate of Climb at Recommended Climb Speed 75 KIAS (AI OFF/ECS OFF)
+40C y= 40.0000 top of the y axis in the top panel
+-50C y=-50.0000 bottom of the y axis in the top panel
+0C y=-0.0788
+4C y= 3.9113
+Ref line 11000kg AUM y=-75.980
+10000kg y=-55.941 top of the y axis in the bottom panel
+11500kg y=-86.089
+14600kg y= -147.803 Max AUW
+15600kg y= -167.754 Alt AUW
+16000kg y= -175.911 bottom of the y axis in the bottom panel
+-800ft/min x= -800
+0 ft/min x=-0.443
+800ft/min x=799.114
+2400ft/min x=2400.000
