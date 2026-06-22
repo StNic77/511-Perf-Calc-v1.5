@@ -543,6 +543,20 @@ function buildEngineCard(engNum) {
     },
   });
 
+  const applyAllBtn = el("button", {
+    class: "btn-apply-all",
+    title: "Apply this Q to all engines",
+    onClick: () => {
+      const val = STORE.powerAssurance.engines[engNum].engTq;
+      if (val === null) return;
+      for (const n of [1, 2, 3]) {
+        STORE.powerAssurance.engines[n].engTq = val;
+      }
+      renderEngines();
+      renderSummary();
+    },
+  }, "→ All");
+
   const titInput = el("input", {
     class: "field__input mono",
     type: "number",
@@ -560,6 +574,7 @@ function buildEngineCard(engNum) {
   const card = el("div", { class: "engine", id: `eng-${engNum}` },
     el("div", { class: "engine__header" },
       el("span", { class: "engine__title" }, `ENG ${engNum}`),
+      applyAllBtn,
     ),
     el("div", { class: "engine__inputs" },
       el("div", { class: "field" },
