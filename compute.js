@@ -238,17 +238,24 @@ function computeEnginePA({ engineNum, eng_tq, eng_tit, pa, oat, onGround }) {
 // Looks up OEI %Q from Annex B's (PA, TEMP) surface, applies AI ON penalty
 // if active, and derives AEO-equivalent.
 //
-// Math (per design doc and operator confirmation 26 Apr 26):
+// Math (per design doc and operator confirmation 26 Apr 26; penalty and
+// rounding-direction updated per operator direction, see below):
 //   raw_oei  = interp(PA, TEMP) on AC.perf.powerAvailable.aiOff
-//   if AI ON: raw_oei -= AC.perf.aiOnPenaltyPct           (8 %Q for -511)
+//   if AI ON: raw_oei -= AC.perf.aiOnPenaltyPct           (15 %Q for -511,
+//                                                          per SARSET AIF
+//                                                          2026-07-29)
 //   oei      = round(raw_oei)            ← displayed integer OEI
 //   raw_aeo  = oei × 2 / 3               ← derived from displayed OEI
-//   aeo      = round(raw_aeo)            ← displayed integer AEO
+//   aeo      = floor(raw_aeo)            ← displayed integer AEO
 //
 // AEO is derived from the *displayed* (rounded) OEI, not from the raw OEI.
 // This matches how the FE would hand-derive: read OEI off the chart,
-// round it to the nearest integer, then compute OEI × 2/3 and round.
+// round it to the nearest integer, then compute OEI × 2/3.
 // Operator decision, 26 Apr 26.
+//
+// AEO is always rounded DOWN (floor), never to nearest — a fractional
+// AEO-Eq (e.g. 80.667) must read as 80, not 81, since a non-conservative
+// round-up would overstate available torque. Operator direction, 30 Jul 26.
 //
 // Returns:
 //   { ok: true, oei, aeoEquiv, oeiRaw, aeoEquivRaw, aiOn }
@@ -309,7 +316,7 @@ function getPowerAvailable(pa, temp, antiIce) {
   return {
     ok: true,
     oei: oeiDisplay,
-    aeoEquiv: Math.round(aeoRaw),
+    aeoEquiv: Math.floor(aeoRaw),
     oeiRaw,
     aeoEquivRaw: aeoRaw,
     aiOn,

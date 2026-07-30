@@ -1994,8 +1994,10 @@ const AC_PERF = {
     aiOff: PWR_AVAIL_OEI_AI_OFF,
   },
 
-  // AI ON penalty applied to OEI before AEO derivation. -8 %Q (subtract).
-  aiOnPenaltyPct: 8,
+  // AI ON penalty applied to OEI before AEO derivation. -15 %Q (subtract).
+  // Per SARSET AIF 2026-07-29: Annex B guidance was incorrect at -8;
+  // crews are to subtract 15, effective immediately, pending SMM Change 7.
+  aiOnPenaltyPct: 15,
 
   // SAFE OEI test margin (% Q). The test in SAR Check is:
   //   HOGE <= aeoEquivAvailable - oeiMargin

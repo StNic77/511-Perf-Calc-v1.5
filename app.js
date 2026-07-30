@@ -2584,7 +2584,7 @@ function buildChartDetailsWithTrace(imgEntry, traceFn, summaryFn) {
 function _buildAnnexBSummaryRow(result, aiOn) {
   if (!result || !result.ok) return null;
   const { refQ, traceOAT, tracePA } = result;
-  const aiOnPenalty = (AC.perf && AC.perf.aiOnPenaltyPct) || 8;
+  const aiOnPenalty = (AC.perf && AC.perf.aiOnPenaltyPct) || 15;
   const correctedQ  = refQ - aiOnPenalty;
   return el("div", { class: "trace-summary" },
     el("div", { class: "trace-summary__row" },
