@@ -1885,7 +1885,7 @@ function renderPreTakeOff() {
 
       // Explanatory note only shown when AI ON is selected
       aiOn && el("div", { class: "pwr-result__note" },
-        "OEI is reduced by 8%Q when Engine AI is selected ON"
+        `Annex B chart (Engine Anti-Ice OFF) value ${resultOff.oei}%Q \u2212 ${(AC.perf && AC.perf.aiOnPenaltyPct) || 15}%Q (Engine Anti-Ice correction) \u2192 ${result.oei}%Q used`
       ),
     )
   );
