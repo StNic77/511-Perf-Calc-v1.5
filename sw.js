@@ -1,6 +1,6 @@
 // 511 Perf Calc — Service Worker
 // Bump CACHE_VERSION on every push to trigger background cache refresh
-const CACHE_VERSION = 'v1.7.4';
+const CACHE_VERSION = 'v1.7.5';
 const CACHE_NAME = '511-perf-calc-' + CACHE_VERSION;
 
 const ASSETS = [
@@ -33,10 +33,25 @@ const ASSETS = [
 ];
 
 // Install: cache all assets
+// Each asset is fetched with {cache:'reload'} so the request bypasses the
+// browser's own HTTP cache and always hits the network. cache.addAll() alone
+// does NOT guarantee this — on iOS Safari especially, some assets already
+// sitting in the HTTP cache get served stale into the new SW cache while
+// others come fresh, producing a mixed-version install (e.g. new app.js +
+// old config.js). Fetching each asset explicitly with 'reload' avoids that.
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => Promise.all(
+        ASSETS.map(url =>
+          fetch(url, { cache: 'reload' }).then(response => {
+            if (!response || response.status !== 200) {
+              throw new Error('Failed to fetch ' + url + ' during install');
+            }
+            return cache.put(url, response);
+          })
+        )
+      ))
       .then(() => self.skipWaiting())
   );
 });
