@@ -2548,7 +2548,7 @@ const AC_CLIMB_PERF = {
 
 const AC = {
   variant: "CH-149-511",
-  version: "1.7.3",
+  version: "1.7.4",
   perf: AC_PERF,
   chartImages: CHART_IMAGES,
 };
