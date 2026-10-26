@@ -61,8 +61,12 @@
       <p class="splash__update-hint">If this button does not respond, an update is available &mdash; swipe the app fully closed and relaunch to update.</p>
 
       <div class="splash__whatsnew">
-        <span class="splash__whatsnew-label" id="splashWhatsNewVersion"></span>
-v1.7.6: AI ON penalty updated from &minus;8 to &minus;15 %Q per SARSET AIF 2026-07-29 (Annex B guidance corrected against AFM Rev 12, Fig 4-62; interim until SMM Change 7). Note updated on Pre Take-Off tab to reflect change. AEO-equivalent (OEI &times; 2/3) now always rounds down (floor) rather than to nearest, so a fractional result reads conservatively low. Also fixes a service-worker install issue that could leave a device on a mixed set of file versions.
+        <span class="splash__whatsnew-label" id="splashWhatsNewVersion"></span>- 26 October 2026
+        <p>Climb: Restored valid results and traces near the zero-climb edge. Corrected the Fig 4-80 mass-dot alignment. Conditions outside the available chart or correction lines now show a coverage message.</p>
+        <p>SAR Check: Chart HOGE now updates when conditions are changed or pulled from another tab. Failed or incomplete calculations clear the previous HOGE and SAFE OEI result. Copied briefs now include ANY HEIGHT and HT LOSS EXCEEDS 400 ft when applicable.</p>
+        <p>Hover and chart limits: Corrected false unrestricted-hover results at the ends of the curves. Existing endpoint masses still receive wind and thrust-margin corrections. Corrected false HOGE rejections at 0 and 30 kt. Transfer Value and climb no longer silently reuse values outside chart coverage. Power Assurance now checks that the TIT intersection is covered by the lower panel. HLDF distinguishes the zero-loss side of the chart from loss exceeding 400 ft.</p>
+        <p>Fuel: Corrected time displays rounding to 60 minutes.</p>
+        <p>Offline: All eight climb chart images are now included in the offline cache. Existing chart performance data is unchanged; no charts were re-digitized.</p>
       </div>
 
     </div>
@@ -462,24 +466,6 @@ v1.7.6: AI ON penalty updated from &minus;8 to &minus;15 %Q per SARSET AIF 2026-
           <h2 class="card__title">Fuel State</h2>
         </div>
         <div class="card__body" id="fuelStateBody"></div>
-      </div>
-
-      <div class="card" id="fuelLegsCard" hidden>
-        <div class="card__header">
-          <h2 class="card__title">Route Legs</h2>
-        </div>
-        <div class="card__body">
-          <p class="hint">Add up to 3 legs. Each leg shows fuel required and go/no-go above reserve.</p>
-          <div id="fuelLegsBody"></div>
-          <button class="btn btn--secondary" id="fuelAddLegBtn" type="button">+ Add Leg</button>
-        </div>
-      </div>
-
-      <div class="card" id="fuelRouteSummaryCard" hidden>
-        <div class="card__header">
-          <h2 class="card__title">Route Summary</h2>
-        </div>
-        <div class="card__body" id="fuelRouteSummaryBody"></div>
       </div>
 
       <div style="padding: 16px 0 8px;">

@@ -28,7 +28,6 @@ const STORE = {
     bingoKg:       250,
     planRateKgHr:  800,
     readings:      [],
-    legs:          [],
     _sessionStart: null,
     _editingIdx:   null,
   },
@@ -65,6 +64,7 @@ const STORE = {
     wind:       null,      // kt headwind
     hogeValue:  null,      // % Q — whatever is currently in the HOGE field
     hogeSource: "pilot",   // "pilot" | "chart" — tracks how the value arrived
+    hogeError: null,
   },
 
   // Climb Performance state
@@ -694,7 +694,15 @@ function describeError(r) {
       return `Eng Q ${r.engTq} above PA=${r.atPA} curve max ${r.range[1].toFixed(1)}.`;
     // Annex B / Power Available errors
     case "pa_outside_chart":
-      return `PA ${r.pa} ft outside Annex B range [${r.range[0]}, ${r.range[1]}] ft.`;
+      return `PA ${r.pa} ft outside chart range [${r.range[0]}, ${r.range[1]}] ft.`;
+    case "pa_lower_outside_curve":
+      return "Intersection outside the digitized TIT panel — use the source chart.";
+    case "hl_outside_chart":
+      return "HLDF trace exits at the zero-loss side — exact loss is outside chart coverage.";
+    case "xref_outside_chart":
+      return "Correction entry outside the digitized chart — use the source chart.";
+    case "hover_outside_chart":
+      return "PA or OAT outside hover chart coverage — capability is not determined.";
     case "temp_outside_curve":
       return `OAT ${r.temp}°C outside Annex B range for the entered PA.`;
     // HOGE errors
@@ -1202,16 +1210,16 @@ function fmtMarginQ(margin) {
   return sign + Math.abs(margin).toFixed(1) + "%Q";
 }
 
-function buildSARCheckBrief(safeOEI, auw, power, hogeQ, hlFt, srFt, srAnyHeight) {
+function buildSARCheckBrief(safeOEI, auw, power, hogeQ, hlFt, srFt, srAnyHeight, hlExceedsChart = false) {
   // §3A.4 format.  PWR shows OEI/AEO so both numbers are briefed.
   const auwStr = auw.toLocaleString("en-US");
   const pwr    = `${power.oei}/${power.aeoEquiv}`;
   const hoge   = `${Math.round(hogeQ)}`;
   if (safeOEI) return `${auwStr} / ${pwr} / ${hoge} / SAFE OEI`;
-  const hlStr = (hlFt !== null && hlFt !== undefined) ? `${hlFt}` : "—";
-  const srStr = (srFt !== null && srFt !== undefined)
-    ? (srAnyHeight ? "ANY HEIGHT" : `${srFt}`)
-    : "—";
+  const hlStr = hlExceedsChart ? "HT LOSS EXCEEDS 400 ft"
+    : (hlFt !== null && hlFt !== undefined) ? `${hlFt}` : "—";
+  const srStr = srAnyHeight ? "ANY HEIGHT"
+    : (srFt !== null && srFt !== undefined) ? `${srFt}` : "—";
   return `${auwStr} / ${pwr} / ${hoge} / NOT SAFE OEI / ${hlStr} / ${srStr}`;
 }
 
@@ -1224,27 +1232,28 @@ function workingSheetRow(label, value, { muted = false } = {}) {
 
 // "Calculate from chart" button handler.
 // Runs getHOGE, fills STORE.sarCheck.hogeValue + hogeSource, updates the
-// input field value, triggers a rerender. Safe to call if conditions are
-// incomplete — it will surface an error in the source label and not corrupt
-// any pilot-entered value.
-function deriveHOGEFromChart() {
+// input field value, triggers a rerender. Choosing chart calculation replaces
+// pilot entry; a failed or incomplete chart lookup leaves no stale verdict.
+function refreshChartHOGE() {
+  const state = STORE.sarCheck;
+  if (state.hogeSource !== "chart") return;
   const { pa, oat, auw, wind } = STORE.sarCheck;
+  state.hogeValue = null;
+  state.hogeError = null;
   if (pa === null || oat === null || auw === null || wind === null) {
-    const lbl = $("#sarcbHogeSourceLabel");
-    if (lbl) lbl.textContent = "Enter all conditions before calculating.";
-    return;
+    state.hogeError = "Enter all conditions before calculating.";
+  } else {
+    const r = getHOGE({ pa, oat, auw, wind, antiIce: STORE.antiIce });
+    if (r.ok) state.hogeValue = parseFloat(r.qHover.toFixed(1));
+    else state.hogeError = `Chart error — ${describeError(r)}`;
   }
-  const r = getHOGE({ pa, oat, auw, wind, antiIce: STORE.antiIce });
-  if (!r.ok) {
-    const lbl = $("#sarcbHogeSourceLabel");
-    if (lbl) lbl.textContent = `Chart error — ${describeError(r)}`;
-    return;
-  }
-  const q = parseFloat(r.qHover.toFixed(1));
-  STORE.sarCheck.hogeValue  = q;
-  STORE.sarCheck.hogeSource = "chart";
   const input = $("#sarcbHogeInput");
-  if (input) input.value = q;
+  if (input) input.value = state.hogeValue === null ? "" : state.hogeValue;
+}
+
+function deriveHOGEFromChart() {
+  STORE.sarCheck.hogeSource = "chart";
+  refreshChartHOGE();
   rerender();
 }
 
@@ -1252,6 +1261,8 @@ function renderSARCheckHOGE() {
   const body = $("#sarcbHogeBody");
   if (!body) return;
   clearEl(body);
+  // Every render uses the current conditions, including cross-tab pulls.
+  refreshChartHOGE();
 
   const { auw, pa, oat, wind, hogeValue, hogeSource } = STORE.sarCheck;
   const conditionsReady = pa !== null && oat !== null && auw !== null && wind !== null;
@@ -1260,7 +1271,7 @@ function renderSARCheckHOGE() {
   const sourceLbl = $("#sarcbHogeSourceLabel");
   if (sourceLbl) {
     if (hogeValue === null) {
-      sourceLbl.textContent = "";
+      sourceLbl.textContent = hogeSource === "chart" ? (STORE.sarCheck.hogeError || "") : "";
     } else if (hogeSource === "chart") {
       sourceLbl.textContent = "Derived from AFM chart";
     } else {
@@ -1298,7 +1309,7 @@ function renderSARCheckHOGE() {
 
   // --- SAFE OEI test ---
   let safeOEI = null, margin = null;
-  if (hogeValue !== null && power && power.ok) {
+  if (conditionsReady && hogeValue !== null && power && power.ok) {
     const marginRule = AC.perf.oeiMargin || 0;
     margin  = power.aeoEquiv - hogeValue;
     safeOEI = hogeValue <= (power.aeoEquiv - marginRule);
@@ -1423,6 +1434,7 @@ function renderSARCheckHOGE() {
       hlOk ? hlResult.hlFt      : null,
       srOk ? srResult.srFt      : null,
       srOk ? srResult.anyHeight : false,
+      hlOk ? hlResult.anyHeight : false,
     );
 
     const briefBlock = el("div", { class: "pilot-brief" },
@@ -2031,12 +2043,12 @@ function renderHoverResultPane(result, auw, cardId, bodyId, label) {
   // --- Cannot hover ---
   if (!result.ok) {
     body.appendChild(
-      el("div", { class: "summary-banner summary-banner--bad" },
-        "Cannot hover \u2014 conditions outside chart limits.")
+      el("div", { class: "summary-banner summary-banner--warn" },
+        "Outside hover chart coverage")
     );
     body.appendChild(
       el("p", { class: "muted", style: "margin-top: 8px; font-size: 13px;" },
-        "OAT too hot and/or PA too high. No hover capability at any AUM.")
+        describeError(result))
     );
     return;
   }
@@ -3410,8 +3422,9 @@ function rerender() {
 
 function fmtHrsMin(totalMins) {
   if (!isFinite(totalMins) || totalMins < 0) return "—";
-  const h = Math.floor(totalMins / 60);
-  const m = Math.round(totalMins % 60);
+  const roundedMins = Math.round(totalMins);
+  const h = Math.floor(roundedMins / 60);
+  const m = roundedMins % 60;
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
@@ -3501,7 +3514,7 @@ const CLIMB_TRACE_CAL = {
       { oat: 40, py: 558 },
       { oat: -50, py: 1066 },
     ],
-    yPxMass10000: 1102, yPxMass15600: 1733, yPxRefLine: 1215, refMass: 11000,
+    yPxMass10000: 1100, yPxMass15600: 1739, yPxRefLine: 1214, refMass: 11000,
     yBot: 1785,
   },
   aeo_mcp_ai_on: {                                       // Fig 4-82
@@ -3774,6 +3787,12 @@ function _climbResultRow(ratingLabel, result) {
     } else if (result.reason === "auw_above_max") {
       valBlock.appendChild(el("span", { class: "badge badge--bad" },
         `AUM ${result.auw} kg exceeds ${result.maxMassKg} kg (Alt AUM)`));
+    } else if (result.reason === "climb_correction_outside_chart") {
+      valBlock.appendChild(el("span", { class: "badge badge--warn" }, "OUTSIDE CORRECTION DATA"));
+      valBlock.appendChild(el("p", { class: "hint" },
+        "Rate is not determined by the digitized correction lines — use the source chart."));
+    } else if (result.reason === "pa_outside_chart") {
+      valBlock.appendChild(el("p", { class: "hint" }, describeError(result)));
     } else if (result.reason === "chart_not_digitized") {
       valBlock.appendChild(el("span", { class: "muted" }, "Chart not digitized"));
     } else {
@@ -3849,8 +3868,6 @@ function renderClimbCharts(pa, oat, auw, aiSuffix, hasInputs) {
 function renderFuel() {
   renderFuelLog();
   renderFuelState();
-  renderFuelLegs();
-  renderFuelRouteSummary();
 }
 
 function renderFuelLog() {
@@ -3994,105 +4011,6 @@ function renderFuelState() {
     { cls: timeToBingoMins < 30 ? "fuel-warn" : "" }));
   table.appendChild(mkRow("Time to Empty", fmtHrsMin(timeToEmptyMins)));
   body.appendChild(table);
-}
-
-function renderFuelLegs() {
-  const addBtn    = $("#fuelAddLegBtn");
-  const legsBody  = $("#fuelLegsBody");
-  const legsCard  = $("#fuelLegsCard");
-  if (!addBtn || !legsBody || !legsCard) return;
-  const F = STORE.fuel;
-  const legs = F.legs;
-  if (F.readings.length === 0 || legs.length === 0) { legsCard.hidden = true; return; }
-  legsCard.hidden = false;
-  clearEl(legsBody);
-  const bingo   = F.bingoKg != null ? F.bingoKg : 250;
-  const planRate = F.planRateKgHr != null ? F.planRateKgHr : 800;
-  const actualRate = calcActualBurnRate();
-  legs.forEach((leg, i) => {
-    const legEl = el("div", { class: "fuel-leg" },
-      el("div", { class: "fuel-leg__header" },
-        el("span", { class: "fuel-leg__num" }, `Leg ${i + 1}`),
-        el("button", {
-          class: "fuel-leg__remove", type: "button", "aria-label": "Remove leg",
-          onClick: () => { F.legs.splice(i, 1); renderFuel(); },
-        }, "×"),
-      ),
-    );
-    const nameInput = el("input", { class: "field__input", type: "text", placeholder: "Leg name (optional)",
-      value: leg.name || "", onInput: (e) => { F.legs[i].name = e.target.value; } });
-    const distInput = el("input", { class: "field__input mono", type: "number",
-      inputmode: "numeric", step: "1", placeholder: "Distance (nm)",
-      value: leg.distNm != null ? String(leg.distNm) : "",
-      onInput: (e) => {
-        const v = parseFloat(e.target.value);
-        F.legs[i].distNm = isNaN(v) ? null : v;
-        renderFuelRouteSummary();
-      }
-    });
-    legEl.appendChild(nameInput);
-    legEl.appendChild(distInput);
-    legsBody.appendChild(legEl);
-  });
-  addBtn.disabled = legs.length >= 3;
-}
-
-function renderFuelRouteSummary() {
-  const card = $("#fuelRouteSummaryCard");
-  const body = $("#fuelRouteSummaryBody");
-  if (!card || !body) return;
-  const F    = STORE.fuel;
-  const legs = F.legs.filter(l => l.distNm != null && l.distNm > 0);
-  if (F.readings.length === 0 || legs.length === 0) { card.hidden = true; return; }
-  card.hidden = false;
-  clearEl(body);
-  const bingo      = F.bingoKg != null ? F.bingoKg : 250;
-  const planRate   = F.planRateKgHr != null ? F.planRateKgHr : 800;
-  const actualRate = calcActualBurnRate();
-  const useRate    = actualRate || planRate;
-  const current    = currentFuelKg();
-  let fuelAfter = current;
-  legs.forEach((leg, i) => {
-    const nm = leg.distNm;
-    const fuelReqPlan   = gs ? (nm / gs) * planRate : null;
-    const fuelReqActual = (gs && actualRate) ? (nm / gs) * actualRate : null;
-    fuelAfter -= (fuelReqPlan || 0);
-    const usableAfter    = fuelAfter - bingo;
-    const goNoGo         = fuelReqPlan != null ? fuelAfter >= bingo : null;
-    const legSummary = el("div", { class: "fuel-leg-summary" });
-    const hdr = el("div", { class: "fuel-leg-summary-header" },
-      el("span", {}, leg.name || `Leg ${i+1}`),
-      goNoGo !== null
-        ? el("span", { class: `fuel-leg-badge ${goNoGo ? "fuel-leg-badge--go" : "fuel-leg-badge--nogo"}` },
-            goNoGo ? "GO" : "NO-GO")
-        : el("span", { class: "fuel-leg-badge" }, `${nm} nm`),
-    );
-    legSummary.appendChild(hdr);
-    const t = el("div", { class: "summary-table" });
-    if (fuelReqPlan != null)
-      t.appendChild(el("div", { class: "summary-row" },
-        el("span", { class: "summary-row__label" }, "Fuel required (plan)"),
-        el("span", { class: "summary-row__value" }, `${Math.round(fuelReqPlan)} kg`),
-      ));
-    if (fuelReqActual != null)
-      t.appendChild(el("div", { class: "summary-row" },
-        el("span", { class: "summary-row__label" }, "Fuel required (actual rate)"),
-        el("span", { class: "summary-row__value" }, `${Math.round(fuelReqActual)} kg`),
-      ));
-    t.appendChild(el("div", { class: "summary-row" },
-      el("span", { class: "summary-row__label" }, "Above reserve after leg"),
-      el("span", { class: `summary-row__value ${usableAfter < 0 ? "fuel-bad" : ""}` },
-        `${Math.round(usableAfter)} kg`),
-    ));
-    legSummary.appendChild(t);
-    body.appendChild(legSummary);
-  });
-  const goAll = fuelAfter >= bingo;
-  body.appendChild(el("div", { class: `summary-row ${goAll ? "summary-row--pass" : "fuel-bad"}`,
-    style: "margin-top: 12px; font-weight: 600;" },
-    el("span", { class: "summary-row__label" }, "Fuel after all legs"),
-    el("span", { class: "summary-row__value" }, `${Math.round(fuelAfter)} kg`),
-  ));
 }
 
 function init() {
@@ -4300,6 +4218,7 @@ function init() {
     const v = num(e.target.value);
     STORE.sarCheck.hogeValue  = v;
     STORE.sarCheck.hogeSource = "pilot";
+    STORE.sarCheck.hogeError = null;
     rerender();
   });
 
@@ -4359,19 +4278,12 @@ function init() {
     renderFuel();
   });
 
-  $("#fuelAddLegBtn").addEventListener("click", () => {
-    if (STORE.fuel.legs.length >= 3) return;
-    STORE.fuel.legs.push({ name: "", distNm: null });
-    renderFuelLegs();
-  });
-
   $("#fuelResetBtn").addEventListener("click", () => {
-    if (!confirm("Reset session? All fuel readings, legs, and setup values will be cleared.")) return;
+    if (!confirm("Reset session? All fuel readings and setup values will be cleared.")) return;
     STORE.fuel = {
       bingoKg:       250,
       planRateKgHr:  800,
       readings:      [],
-      legs:          [],
       _sessionStart: null,
       _editingIdx:   null,
     };
@@ -4399,7 +4311,7 @@ function initSplash() {
     const footerVer = document.getElementById("footerVersion");
     if (footerVer) footerVer.textContent = "v" + AC.version + footerVer.textContent;
     const wnVer = document.getElementById("splashWhatsNewVersion");
-    if (wnVer) wnVer.textContent = "v" + AC.version + " — ";
+    if (wnVer) wnVer.textContent = "v" + AC.version + " ";
   }
 
   // Dismiss on button click

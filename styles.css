@@ -1405,50 +1405,6 @@ body.chart-viewer-open {
 .fuel-bad  { color: var(--color-fail, #dc2626) !important; font-weight: 600; }
 .fuel-warn { color: var(--color-warn-text, #92400e) !important; }
 
-.fuel-leg {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-}
-
-.fuel-leg__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.fuel-leg__num    { font-weight: 600; font-size: 13px; }
-.fuel-leg__remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 4px;
-}
-
-.fuel-leg-summary-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.fuel-leg-badge {
-  font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
-}
-.fuel-leg-badge--go   { background: var(--color-pass-bg, #d1fae5); color: var(--color-pass, #065f46); }
-.fuel-leg-badge--nogo { background: var(--color-fail-bg, #fee2e2); color: var(--color-fail, #dc2626); }
-
 .field--btn-align { justify-content: flex-end; padding-top: 20px; }
 
 .btn--danger {

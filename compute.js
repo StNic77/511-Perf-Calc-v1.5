@@ -157,6 +157,13 @@ function getPowerAssuranceMaxTIT(chart, eng_tq, pa, oat, onGround = false) {
   }
 
   const x = lookupTopX(chart, eng_tq, pa);
+  const [oatLo, oatHi] = bracket(oatAxis, oat);
+  for (const idx of [oatLo, oatHi]) {
+    const curve = chart.lower.curves[String(oatAxis[idx])];
+    if (x < curve[0].x || x > curve[curve.length - 1].x) {
+      return { ok: false, reason: "pa_lower_outside_curve", x, oat };
+    }
+  }
   const maxTITInFlight = lookupBottomY(chart, x, oat);
   const groundCorr = onGround ? chart.groundCorrectionC : 0;
   const maxTIT = maxTITInFlight + groundCorr;
@@ -381,12 +388,21 @@ function lookupHogeUpper(chart, da, auw) {
 // Lower panel: forward-by-Y along each bracketing entry-Q curve at the
 // requested wind (curves are stored Y=wind kt, X=q_final with wind
 // monotone-ascending), then linear interp between the two by entry Q.
+// Only printed wind endpoints are snapped, on copies of the digitized data.
+// The 0.35 kt tolerance covers the existing 29.70--30.12 kt clicks, while
+// preserving genuine partial curves (e.g. the AI OFF 130% line at 7.7 kt).
+function _printedWindEndpoints(curve) {
+  return curve.map(pt => ({ x: pt.x, y: Math.abs(pt.y) <= 0.35 ? 0
+    : Math.abs(pt.y - 30) <= 0.35 ? 30 : pt.y }));
+}
+
 function lookupHogeLower(chart, q_ref, wind) {
   const axis = chart.lower.entryQAxis;
+  if (q_ref < axis[0] || q_ref > axis[axis.length - 1] || wind < 0 || wind > 30) return null;
   const [iLo, iHi] = bracket(axis, q_ref);
   const qLo = axis[iLo], qHi = axis[iHi];
-  const cLo = chart.lower.curves[String(qLo)];
-  const cHi = chart.lower.curves[String(qHi)];
+  const cLo = _printedWindEndpoints(chart.lower.curves[String(qLo)]);
+  const cHi = _printedWindEndpoints(chart.lower.curves[String(qHi)]);
 
   // Each entry-Q curve has its own wind extent. The Q=130 curve is the
   // important case: its natural lower bound is +7.7 kt (chart envelope, not
@@ -479,6 +495,9 @@ function getTransferValue(pa, oat, antiIce) {
   if (chart.curves) {
     const curves  = chart.curves;
     const paAxis  = curves.map(c => c.pa);
+    if (pa < paAxis[0] || pa > paAxis[paAxis.length - 1]) {
+      return { ok: false, reason: "pa_outside_chart", pa, range: [paAxis[0], paAxis[paAxis.length - 1]] };
+    }
 
     // Bracket PA
     let paLoIdx = 0, paHiIdx = 0;
@@ -489,6 +508,19 @@ function getTransferValue(pa, oat, antiIce) {
     } else {
       for (let i = 0; i < paAxis.length - 1; i++) {
         if (paAxis[i] <= pa && pa <= paAxis[i + 1]) { paLoIdx = i; paHiIdx = i + 1; break; }
+      }
+    }
+
+    // Require coverage on each contributing curve. An endpoint is data
+    // coverage, not permission to reuse that value at any temperature.
+    const contributors = paLoIdx === paHiIdx ? [paLoIdx]
+      : pa === paAxis[paLoIdx] ? [paLoIdx]
+      : pa === paAxis[paHiIdx] ? [paHiIdx] : [paLoIdx, paHiIdx];
+    for (const idx of contributors) {
+      const c = curves[idx];
+      const coldEnd = c.oatTop + c.oatStep * (c.tvs.length - 1);
+      if (oat < coldEnd || oat > c.oatTop) {
+        return { ok: false, reason: "oat_outside_band", oat, range: [coldEnd, c.oatTop] };
       }
     }
 
@@ -567,11 +599,15 @@ function _wpdYToWindKt(yToWind, wpdY) {
 // noise (e.g. maxY=2.3881 → 0.07 kt instead of exactly 0.00). Rejecting
 // when wind=0 is outside one curve but not the other would be wrong —
 // interpAlongCurveByY already clamps at the endpoint, so proceed.
-function _lookupHLSRLower(chart, xRef, wind) {
+function _lookupHLSRLower(chart, xRef, wind, kind = "safeReject") {
   const cal = chart.lower.yToWind;
   if (!cal || cal.yAt0kt === null) return { ok: false, reason: "calibration_pending" };
 
   const axis = chart.lower.entryXRefAxis;
+  if (wind < 0 || wind > 30) return { ok: false, reason: "wind_outside_curve", wind, xRef };
+  if (xRef < axis[0] || xRef > axis[axis.length - 1]) {
+    return { ok: false, reason: "xref_outside_chart", xRef };
+  }
   const [iLo, iHi] = bracket(axis, xRef);
   const eLo = axis[iLo], eHi = axis[iHi];
   const cLo = chart.lower.curves[String(eLo)];
@@ -579,7 +615,8 @@ function _lookupHLSRLower(chart, xRef, wind) {
 
   // Build transformed curves (wpdY → wind kt) on the fly.
   const transform = (curve) =>
-    curve.map(pt => ({ x: pt.x, y: _wpdYToWindKt(cal, pt.y) })).sort((a, b) => a.y - b.y);
+    _printedWindEndpoints(curve.map(pt => ({ x: pt.x, y: _wpdYToWindKt(cal, pt.y) })))
+      .sort((a, b) => a.y - b.y);
 
   const tLo = transform(cLo);
   const tHi = transform(cHi);
@@ -596,6 +633,9 @@ function _lookupHLSRLower(chart, xRef, wind) {
     // Wind above both curve maxima: the SR value has run off the right edge of
     // the chart (≥ ANY HEIGHT threshold). Per FM intent, brief as ANY HEIGHT.
     if (aboveMax(tLo, wind) && aboveMax(tHi, wind)) {
+      if (kind === "heightLoss") {
+        return { ok: false, reason: "hl_outside_chart", edge: "low" };
+      }
       return { ok: true, anyHeight: true, xFinal: null };
     }
     // Wind below both curve minima: genuine out-of-envelope, hard reject.
@@ -669,11 +709,13 @@ function getHeightLoss({ pa, oat, auw, wind, antiIce }) {
   }
 
   const upperResult = _lookupHLSRUpper(chart, tv, auw);
-  if (upperResult === null || upperResult.aboveChart)
+  if (upperResult === null)
     return { ok: true, anyHeight: true, hlFt: null, xRef: null, tv };
+  if (upperResult.aboveChart)
+    return { ok: false, reason: "hl_outside_chart", edge: "low", tv, auw };
   const xRef = upperResult.xRef;
 
-  const lowerResult = _lookupHLSRLower(chart, xRef, wind);
+  const lowerResult = _lookupHLSRLower(chart, xRef, wind, "heightLoss");
   if (!lowerResult.ok) return { ...lowerResult, tv, xRef };
   if (lowerResult.anyHeight) return { ok: true, anyHeight: true, hlFt: null, xRef, tv };
 
@@ -784,10 +826,9 @@ function evaluateSAROEISafety({ pa, oat, auw, wind, antiIce }) {
 // Performance improves moving RIGHT (higher mass = better hover capability).
 //
 // Out-of-envelope policy:
-//   Panel 1 right edge (OAT very cold / PA very low): conditions exceed chart
-//     limits in the favourable direction — hover is unrestricted, cap at ALT_AUM.
-//   Panel 1 left edge (OAT very hot / PA very high): cannot hover at any
-//     operationally relevant AUW — hard reject.
+//   Panel 1: PA/OAT beyond digitized coverage gives no performance verdict.
+//     A curve's endpoint is not evidence of zero or unlimited capability.
+//     OAT within 0.25 C of an endpoint uses its measured mass.
 //   Panels 2 & 3: clamp at curve ends (headwind/TM outside digitized range);
 //     the caller surfaces a warning flag rather than a hard reject.
 //
@@ -809,18 +850,13 @@ function evaluateSAROEISafety({ pa, oat, auw, wind, antiIce }) {
 // we interpolate along each curve at the requested OAT (→ mass), then interp
 // between the two PA values.
 //
-// Returns: { mass: number, unrestricted: bool, cannotHover: bool }
+// Returns: { mass: number } or { outsideChart: true }.
 function _hovPanel1(paData, pa, oat) {
   const axis = paData.paAxis;
 
-  // PA outside chart range
-  if (pa > axis[axis.length - 1]) {
-    // Above highest PA curve — conditions worse than chart covers. Cannot hover.
-    return { mass: null, unrestricted: false, cannotHover: true };
-  }
-  if (pa < axis[0]) {
-    // Below lowest PA curve — excellent conditions, treat as unrestricted.
-    return { mass: null, unrestricted: true, cannotHover: false };
+  // Coverage endpoints do not imply either unlimited or zero capability.
+  if (pa < axis[0] || pa > axis[axis.length - 1]) {
+    return { outsideChart: true };
   }
 
   const [iLo, iHi] = bracket(axis, pa);
@@ -833,10 +869,12 @@ function _hovPanel1(paData, pa, oat) {
   // (hotter → lower hover limit). We use the generic primitives adapted for
   // the {oat, mass} shape.
   function interpCurveAtOAT(curve, oat_in) {
-    // Off the cold end → unrestricted (right edge of chart = best performance)
-    if (oat_in <= curve[0].oat)  return { mass: curve[0].mass,                unrestricted: true,  cannotHover: false };
-    // Off the hot end → cannot hover (left edge of chart = worst performance)
-    if (oat_in >= curve[curve.length - 1].oat) return { mass: curve[curve.length - 1].mass, unrestricted: false, cannotHover: true  };
+    // Allow only the small click error at the measured endpoint (0.25 C).
+    // Use its actual mass, and continue through wind/TM corrections.
+    if (oat_in < curve[0].oat - 0.25 || oat_in > curve[curve.length - 1].oat + 0.25)
+      return { outsideChart: true };
+    if (oat_in <= curve[0].oat) return { mass: curve[0].mass, unrestricted: false, cannotHover: false };
+    if (oat_in >= curve[curve.length - 1].oat) return { mass: curve[curve.length - 1].mass, unrestricted: false, cannotHover: false };
     for (let i = 0; i < curve.length - 1; i++) {
       if (oat_in >= curve[i].oat && oat_in <= curve[i + 1].oat) {
         const m = interp1(oat_in, curve[i].oat, curve[i].mass,
@@ -851,10 +889,7 @@ function _hovPanel1(paData, pa, oat) {
   if (paLo === paHi) return rLo;
   const rHi = interpCurveAtOAT(cHi, oat);
 
-  // If either end is unrestricted, return unrestricted.
-  if (rLo.unrestricted || rHi.unrestricted) return { mass: null, unrestricted: true, cannotHover: false };
-  // If either end cannot hover, return cannot hover (conservative).
-  if (rLo.cannotHover  || rHi.cannotHover)  return { mass: null, unrestricted: false, cannotHover: true  };
+  if (rLo.outsideChart || rHi.outsideChart) return { outsideChart: true };
 
   // Both in range: interpolate between the two PA curve masses.
   const mass = interp1(pa, paLo, rLo.mass, paHi, rHi.mass);
@@ -985,27 +1020,9 @@ function getMaxMassToHover({ pa, oat, wind = 0, tm = 0, antiIce = "OFF", rating 
   // ---- Panel 1 -----------------------------------------------------------
   const p1 = _hovPanel1(hovData.pa, pa, oat);
 
-  if (p1.cannotHover) {
-    return {
-      ok: false,
-      reason: "cannot_hover",
-      message: "Conditions outside chart limits — cannot hover at any AUM.",
-      pa, oat,
-    };
-  }
-
-  if (p1.unrestricted) {
-    return {
-      ok: true,
-      unrestricted: true,
-      baseMass:  altAum,
-      windMass:  altAum,
-      finalMass: altAum,
-      aumFlag:   "at_alt_aum",
-      windClamped: false,
-      tmClamped:   false,
-      message: "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM.",
-    };
+  if (p1.outsideChart) {
+    return { ok: false, reason: "hover_outside_chart", pa, oat,
+      message: "Conditions outside chart coverage — hover capability is not determined." };
   }
 
   const baseMass = p1.mass;
@@ -1121,6 +1138,9 @@ function _climbLookup(variantKey, pa, oat, auw) {
 
   if (paKeys.length === 0) {
     return { ok: false, reason: "pa_no_curve", pa };
+  }
+  if (pa < paKeys[0] || pa > paKeys[paKeys.length - 1]) {
+    return { ok: false, reason: "pa_outside_chart", pa, range: [paKeys[0], paKeys[paKeys.length - 1]] };
   }
 
   // Helper: given a PA curve key integer, find the curve array
@@ -1241,13 +1261,13 @@ function _climbLookup(variantKey, pa, oat, auw) {
   }
 
   // Bracket rawRoC between correction lines.
-  // rawRoC outside the correction line range means the trace would exit the
-  // chart boundary before reaching AUW — return out-of-envelope immediately.
-  // The correction line range IS the valid domain; do not extrapolate beyond it.
+  // Outside the stored reference-line range, the correction is unsupported.
+  // This does not establish zero climb or a final rate exceeding xMax: mass
+  // correction may change the outcome. Do not extrapolate missing lines.
   if (rawRoc < refRocs[0]) {
     return {
       ok: false,
-      reason: "cannot_climb",
+      reason: "climb_correction_outside_chart",
       rawRoc: Math.round(rawRoc),
       finalRoc: null,
       xMin,
@@ -1255,8 +1275,8 @@ function _climbLookup(variantKey, pa, oat, auw) {
   }
   if (rawRoc > refRocs[refRocs.length - 1]) {
     return {
-      ok: true,
-      exceedsChart: true,
+      ok: false,
+      reason: "climb_correction_outside_chart",
       finalRoc: null,
       rawRoc: Math.round(rawRoc),
       xMax,
@@ -1275,15 +1295,35 @@ function _climbLookup(variantKey, pa, oat, auw) {
   const lineLo = sortedLines[lineLoIdx];
   const lineHi = sortedLines[lineHiIdx];
 
-  const resLo = interpLine(lineLo, auw);
+  let resLo = interpLine(lineLo, auw);
   const resHi = interpLine(lineHi, auw);
+  let refRocLo = lineLo.refRoc;
 
-  // If either bracketing line ran out before reaching AUW, the correction
-  // line exited the left chart boundary — the aircraft cannot sustain climb.
+  // A correction line can reach xMin before AUW while the trace between it
+  // and the next line remains inside the chart. Interpolate the reference
+  // RoC at the left edge between those lines' exit masses, then bracket the
+  // trace between that edge point and the surviving upper line at AUW.
+  // Require actual left-edge endpoints: a truncated dataset is not an exit.
+  if (resLo.exitedLeft && !resHi.exitedLeft) {
+    const exitLo = lineLo.points.reduce((a, b) => a.mass > b.mass ? a : b);
+    const exitHi = lineHi.points.reduce((a, b) => a.mass > b.mass ? a : b);
+    if (exitLo.roc === xMin && exitHi.roc === xMin &&
+        exitHi.mass > exitLo.mass && auw <= exitHi.mass) {
+      refRocLo = interp1(auw, exitLo.mass, lineLo.refRoc, exitHi.mass, lineHi.refRoc);
+      if (rawRoc >= refRocLo) {
+        resLo = { roc: xMin, exitedLeft: false };
+      }
+    }
+  }
+
+  // Reject when the requested trace cannot be bracketed inside the chart.
   if (resLo.exitedLeft || resHi.exitedLeft) {
+    const exitedAtLeft = (line, result) => !result.exitedLeft ||
+      line.points.reduce((a, b) => a.mass > b.mass ? a : b).roc === xMin;
     return {
       ok: false,
-      reason: "cannot_climb",
+      reason: exitedAtLeft(lineLo, resLo) && exitedAtLeft(lineHi, resHi)
+        ? "cannot_climb" : "climb_correction_outside_chart",
       rawRoc: Math.round(rawRoc),
       finalRoc: null,
       xMin,
@@ -1292,7 +1332,7 @@ function _climbLookup(variantKey, pa, oat, auw) {
 
   const rocAtAuwLo = resLo.roc;
   const rocAtAuwHi = resHi.roc;
-  const finalRoc   = interp1(rawRoc, refRocs[lineLoIdx], rocAtAuwLo, refRocs[lineHiIdx], rocAtAuwHi);
+  const finalRoc   = interp1(rawRoc, refRocLo, rocAtAuwLo, lineHi.refRoc, rocAtAuwHi);
 
   // ---- Step 3: Out-of-envelope checks ------------------------------------
 

@@ -1,6 +1,6 @@
 // 511 Perf Calc — Service Worker
 // Bump CACHE_VERSION on every push to trigger background cache refresh
-const CACHE_VERSION = 'v1.7.6';
+const CACHE_VERSION = 'v1.7.7';
 const CACHE_NAME = '511-perf-calc-' + CACHE_VERSION;
 
 const ASSETS = [
@@ -30,6 +30,14 @@ const ASSETS = [
   './images/SR_AI_ON.png',
   './images/TV_AI_OFF.png',
   './images/TV_AI_ON.png',
+  './images/FIG_4_77_AEO_ROC_30MIN_AI_OFF.png',
+  './images/FIG_4_79_AEO_ROC_MCP_AI_OFF.png',
+  './images/FIG_4_80_AEO_ROC_30MIN_AI_ON.png',
+  './images/FIG_4_82_AEO_ROC_MCP_AI_ON.png',
+  './images/FIG_4_84_OEI_ROC_30MIN_AI_OFF.png',
+  './images/FIG_4_85_OEI_ROC_MCP_AI_OFF.png',
+  './images/FIG_4_87_OEI_ROC_30MIN_AI_ON.png',
+  './images/FIG_4_88_OEI_ROC_MCP_AI_ON.png',
 ];
 
 // Install: cache all assets

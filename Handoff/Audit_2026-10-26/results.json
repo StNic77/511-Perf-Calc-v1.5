@@ -1,0 +1,1703 @@
+{
+  "climb": [
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1374,
+        "rawRoc": 1722,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1334,
+        "rawRoc": 1722,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 2040,
+        "rawRoc": 1100,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1702,
+        "rawRoc": 1702,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1702,
+        "rawRoc": 1702,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_off",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 2495,
+        "rawRoc": 2495,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1077,
+        "rawRoc": 1407,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1037,
+        "rawRoc": 1407,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1425,
+        "rawRoc": 605,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1380,
+        "rawRoc": 1380,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1380,
+        "rawRoc": 1380,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_off",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 2280,
+        "rawRoc": 2280,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 537,
+        "rawRoc": 1588,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 498,
+        "rawRoc": 1588,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": 798,
+        "finalRoc": null,
+        "xMin": 0
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 844,
+        "rawRoc": 1563,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 844,
+        "rawRoc": 1563,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_30min_ai_on",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 2366,
+        "rawRoc": 2951,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": 1132,
+        "finalRoc": null,
+        "xMin": 0
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": 1132,
+        "finalRoc": null,
+        "xMin": 0
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 353,
+        "rawRoc": 142,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 492,
+        "rawRoc": 1097,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 492,
+        "rawRoc": 1097,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "aeo_mcp_ai_on",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 2152,
+        "rawRoc": 2722,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 57,
+        "rawRoc": 1012,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 23,
+        "rawRoc": 1012,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 782,
+        "rawRoc": 537,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 337,
+        "rawRoc": 998,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 337,
+        "rawRoc": 998,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_off",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1151,
+        "rawRoc": 1690,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -205,
+        "rawRoc": 729,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -237,
+        "rawRoc": 729,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 289,
+        "rawRoc": 118,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 64,
+        "rawRoc": 710,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 64,
+        "rawRoc": 710,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_off",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1192,
+        "rawRoc": 1710,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": 248,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": 248,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -186,
+        "rawRoc": -320,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -306,
+        "rawRoc": 227,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -306,
+        "rawRoc": 227,
+        "extrapolationWarning": false
+      }
+    },
+    {
+      "variant": "oei_30min_ai_on",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1128,
+        "rawRoc": 1606,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 13900,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": -88,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": 10000,
+      "oat": -1,
+      "mass": 14000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": -88,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": 10000,
+      "oat": 20,
+      "mass": 10000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": -620,
+        "rawRoc": -706,
+        "extrapolationWarning": true
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": 10000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": -114,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": 12000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": false,
+        "reason": "cannot_climb",
+        "rawRoc": -114,
+        "finalRoc": null,
+        "xMin": -800
+      }
+    },
+    {
+      "variant": "oei_mcp_ai_on",
+      "pa": -2000,
+      "oat": 0,
+      "mass": 13000,
+      "result": {
+        "ok": true,
+        "exceedsChart": false,
+        "finalRoc": 1063,
+        "rawRoc": 1519,
+        "extrapolationWarning": false
+      }
+    }
+  ],
+  "hover": [
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": 10000,
+      "oat": -44,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 13398,
+        "windMass": 13404,
+        "finalMass": 13404,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": 10000,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": 0,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 11868,
+        "windMass": 11871,
+        "finalMass": 11871,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": 0,
+      "oat": 41,
+      "result": {
+        "ok": false,
+        "reason": "cannot_hover",
+        "message": "Conditions outside chart limits — cannot hover at any AUM.",
+        "pa": 0,
+        "oat": 41
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": -1000,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 13042,
+        "windMass": 13050,
+        "finalMass": 13050,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "maxCont",
+      "pa": -1001,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": 10000,
+      "oat": -44,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 13766,
+        "windMass": 13780,
+        "finalMass": 13780,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": 10000,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": 0,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 13642,
+        "windMass": 13656,
+        "finalMass": 13656,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": 0,
+      "oat": 41,
+      "result": {
+        "ok": false,
+        "reason": "cannot_hover",
+        "message": "Conditions outside chart limits — cannot hover at any AUM.",
+        "pa": 0,
+        "oat": 41
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": -1000,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 14658,
+        "windMass": 14673,
+        "finalMass": 14673,
+        "aumFlag": "at_max_aum",
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "rating": "thirtyMin",
+      "pa": -1001,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": 10000,
+      "oat": -44,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 12005,
+        "windMass": 12011,
+        "finalMass": 12011,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": 10000,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": 0,
+      "oat": 40,
+      "result": {
+        "ok": false,
+        "reason": "cannot_hover",
+        "message": "Conditions outside chart limits — cannot hover at any AUM.",
+        "pa": 0,
+        "oat": 40
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": 0,
+      "oat": 41,
+      "result": {
+        "ok": false,
+        "reason": "cannot_hover",
+        "message": "Conditions outside chart limits — cannot hover at any AUM.",
+        "pa": 0,
+        "oat": 41
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": -1000,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 10630,
+        "windMass": 10638,
+        "finalMass": 10638,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "maxCont",
+      "pa": -1001,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": 10000,
+      "oat": -44,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 12021,
+        "windMass": 12018,
+        "finalMass": 12018,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": 10000,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": 0,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 11506,
+        "windMass": 11502,
+        "finalMass": 11502,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": 0,
+      "oat": 41,
+      "result": {
+        "ok": false,
+        "reason": "cannot_hover",
+        "message": "Conditions outside chart limits — cannot hover at any AUM.",
+        "pa": 0,
+        "oat": 41
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": -1000,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": false,
+        "baseMass": 12806,
+        "windMass": 12813,
+        "finalMass": 12813,
+        "aumFlag": null,
+        "windClamped": false,
+        "tmClamped": false
+      }
+    },
+    {
+      "antiIce": "ON",
+      "rating": "thirtyMin",
+      "pa": -1001,
+      "oat": 35,
+      "result": {
+        "ok": true,
+        "unrestricted": true,
+        "baseMass": 15600,
+        "windMass": 15600,
+        "finalMass": 15600,
+        "aumFlag": "at_alt_aum",
+        "windClamped": false,
+        "tmClamped": false,
+        "message": "Conditions beyond chart limits — no hover mass restriction. Cap at ALT AUM."
+      }
+    }
+  ],
+  "transfer": [
+    {
+      "antiIce": "OFF",
+      "pa": 10000,
+      "oat": 20,
+      "result": {
+        "ok": true,
+        "tv": 4.25,
+        "da": 12943.864
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "pa": 10000,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "tv": 4.25,
+        "da": 15319.864
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "pa": 12000,
+      "oat": 20,
+      "result": {
+        "ok": true,
+        "tv": 4.25,
+        "da": 15413.836800000001
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "pa": -2000,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "tv": 8.16,
+        "da": 500.0272
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "pa": 0,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "tv": 12.86,
+        "da": -7128
+      }
+    },
+    {
+      "antiIce": "OFF",
+      "pa": 0,
+      "oat": -60,
+      "result": {
+        "ok": true,
+        "tv": 12.86,
+        "da": -8910
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": 10000,
+      "oat": 20,
+      "result": {
+        "ok": true,
+        "tv": 3.37,
+        "da": 12943.864
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": 10000,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "tv": 3.37,
+        "da": 15319.864
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": 12000,
+      "oat": 20,
+      "result": {
+        "ok": true,
+        "tv": 3.37,
+        "da": 15413.836800000001
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": -2000,
+      "oat": 40,
+      "result": {
+        "ok": true,
+        "tv": 6.72,
+        "da": 500.0272
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": 0,
+      "oat": -45,
+      "result": {
+        "ok": true,
+        "tv": 12.78,
+        "da": -7128
+      }
+    },
+    {
+      "antiIce": "ON",
+      "pa": 0,
+      "oat": -60,
+      "result": {
+        "ok": true,
+        "tv": 12.78,
+        "da": -8910
+      }
+    }
+  ],
+  "staleHoge": {
+    "initial": {
+      "auw": 12000,
+      "pa": 0,
+      "oat": 15,
+      "wind": 0,
+      "hogeValue": 79.1,
+      "hogeSource": "chart"
+    },
+    "initialDisplay": "SAFE OEI  (margin +4.9%Q) AUW 12,000 kg PWR 127 / 84%Q  (OEI / AEO eq) HOGE 79%Q [chart]  ·  no-wind ref 79.1%Q Press Alt 0 ft TEMP 15°C WIND 0 kt headwind DA 0 ft  (ISA +15.0°C)",
+    "afterFailure": {
+      "auw": 20000,
+      "pa": 0,
+      "oat": 15,
+      "wind": 0,
+      "hogeValue": 79.1,
+      "hogeSource": "chart"
+    },
+    "error": "Chart error — AUW 20000 kg outside chart range [10000, 15600] kg.",
+    "displayAfterFailure": "SAFE OEI  (margin +4.9%Q) AUW 12,000 kg PWR 127 / 84%Q  (OEI / AEO eq) HOGE 79%Q [chart]  ·  no-wind ref 79.1%Q Press Alt 0 ft TEMP 15°C WIND 0 kt headwind DA 0 ft  (ISA +15.0°C)",
+    "displayAfterRender": "SAFE OEI  (margin +4.9%Q) AUW 20,000 kg PWR 127 / 84%Q  (OEI / AEO eq) HOGE 79%Q [chart] Press Alt 0 ft TEMP 15°C WIND 0 kt headwind DA 0 ft  (ISA +15.0°C)",
+    "sourceAfterRender": "Derived from AFM chart"
+  },
+  "pullHoge": {
+    "state": {
+      "auw": 14000,
+      "pa": 0,
+      "oat": 15,
+      "wind": 0,
+      "hogeValue": 79.1,
+      "hogeSource": "chart"
+    },
+    "requiredHoge": {
+      "ok": true,
+      "qHover": 97.63514405214329,
+      "qRef": 97.66111071644195,
+      "da": 0
+    },
+    "display": "SAFE OEI  (margin +4.9%Q) AUW 14,000 kg PWR 127 / 84%Q  (OEI / AEO eq) HOGE 79%Q [chart]  ·  no-wind ref 97.7%Q Press Alt 0 ft TEMP 15°C WIND 0 kt headwind DA 0 ft  (ISA +15.0°C)"
+  },
+  "fuel": {
+    "timeFormatting": [
+      {
+        "minutes": 59.5,
+        "text": "0h 60m"
+      },
+      {
+        "minutes": 119.5,
+        "text": "1h 60m"
+      }
+    ]
+  },
+  "brief": "14,000 / 100/66 / 80 / NOT SAFE OEI / — / —",
+  "hogeEndpoints": [
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 0,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 79.11526327681592,
+        "qRef": 79.06376360337337,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 0.1,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 79.10775574307935,
+        "qRef": 79.06376360337337,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 29,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 62.094780407019165,
+        "qRef": 79.06376360337337,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 30,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": false,
+        "reason": "wind_outside_curve",
+        "wind": 30,
+        "qRef": 79.06376360337337,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 0,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": false,
+        "reason": "wind_outside_curve",
+        "wind": 0,
+        "qRef": 115.26139056935162,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 0.1,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 115.33191335049032,
+        "qRef": 115.26139056935162,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 29,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 98.51956264550748,
+        "qRef": 115.26139056935162,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 30,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 96.09652367310838,
+        "qRef": 115.26139056935162,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 0,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 81.50483572880398,
+        "qRef": 81.50243757542053,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 0.1,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 81.48798510964319,
+        "qRef": 81.50243757542053,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 29,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 64.16672562807832,
+        "qRef": 81.50243757542053,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 12000,
+        "wind": 30,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": false,
+        "reason": "wind_outside_curve",
+        "wind": 30,
+        "qRef": 81.50243757542053,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 0,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 117.92457020725966,
+        "qRef": 118.02185642950707,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 0.1,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 117.9197349703346,
+        "qRef": 118.02185642950707,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 29,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "qHover": 99.9353794654127,
+        "qRef": 118.02185642950707,
+        "da": 0
+      }
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "auw": 15600,
+        "wind": 30,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": false,
+        "reason": "wind_outside_curve",
+        "wind": 30,
+        "qRef": 118.02185642950707,
+        "da": 0
+      }
+    }
+  ],
+  "heightLossLabels": [
+    {
+      "inputs": {
+        "pa": -1000,
+        "oat": -30,
+        "auw": 12500,
+        "wind": 0,
+        "antiIce": "ON"
+      },
+      "result": {
+        "ok": true,
+        "anyHeight": true,
+        "hlFt": null,
+        "xRef": null,
+        "tv": 12.5
+      },
+      "upper": {
+        "aboveChart": true
+      },
+      "hoge": {
+        "ok": true,
+        "qHover": 80.79316815418927,
+        "qRef": 80.78729440499757,
+        "da": -6580.9864
+      },
+      "power": {
+        "ok": true,
+        "oei": 121,
+        "aeoEquiv": 80,
+        "oeiRaw": 121.21719499166238,
+        "aeoEquivRaw": 80.66666666666667,
+        "aiOn": true
+      }
+    },
+    {
+      "inputs": {
+        "pa": -1000,
+        "oat": -10,
+        "auw": 15600,
+        "wind": 30,
+        "antiIce": "OFF"
+      },
+      "result": {
+        "ok": true,
+        "anyHeight": true,
+        "hlFt": null,
+        "xRef": 191.60825189873427,
+        "tv": 11.54
+      },
+      "upper": {
+        "xRef": 191.60825189873427
+      },
+      "hoge": {
+        "ok": true,
+        "qHover": 89.46433941113443,
+        "qRef": 108.12596886061581,
+        "da": -4204.9864
+      },
+      "power": {
+        "ok": true,
+        "oei": 134,
+        "aeoEquiv": 89,
+        "oeiRaw": 134.23573899803534,
+        "aeoEquivRaw": 89.33333333333333,
+        "aiOn": false
+      }
+    }
+  ],
+  "overlay": {
+    "variant": "aeo_30min_ai_on",
+    "mass": 14000,
+    "calculatedY": 1552.7142857142858,
+    "measuredDatumY": 1557,
+    "measurement": "Dark horizontal grid row on the existing 1700x2200 source image; approximately 4 px offset."
+  },
+  "powerAssuranceLowerBoundary": [
+    {
+      "inputs": {
+        "engineNum": 1,
+        "pa": 0,
+        "oat": -45,
+        "eng_tq": 51
+      },
+      "result": {
+        "ok": true,
+        "maxTIT": 549.2913,
+        "maxTITInFlight": 549.2913,
+        "groundCorr": 0,
+        "x": 0.029909498775977927
+      },
+      "lowerCurveFirstPoint": {
+        "x": 0.129392,
+        "y": 549.2913
+      }
+    },
+    {
+      "inputs": {
+        "engineNum": 2,
+        "pa": 0,
+        "oat": -45,
+        "eng_tq": 51
+      },
+      "result": {
+        "ok": true,
+        "maxTIT": 550.793,
+        "maxTITInFlight": 550.793,
+        "groundCorr": 0,
+        "x": 0.029909498775977927
+      },
+      "lowerCurveFirstPoint": {
+        "x": 0.065693,
+        "y": 550.793
+      }
+    }
+  ],
+  "assets": {
+    "missingFiles": [],
+    "notPrecached": [
+      "images/FIG_4_77_AEO_ROC_30MIN_AI_OFF.png",
+      "images/FIG_4_79_AEO_ROC_MCP_AI_OFF.png",
+      "images/FIG_4_80_AEO_ROC_30MIN_AI_ON.png",
+      "images/FIG_4_82_AEO_ROC_MCP_AI_ON.png",
+      "images/FIG_4_84_OEI_ROC_30MIN_AI_OFF.png",
+      "images/FIG_4_85_OEI_ROC_MCP_AI_OFF.png",
+      "images/FIG_4_87_OEI_ROC_30MIN_AI_ON.png",
+      "images/FIG_4_88_OEI_ROC_MCP_AI_ON.png"
+    ]
+  },
+  "data": {
+    "nonFinite": [],
+    "axisProblems": [],
+    "curvesChecked": 451,
+    "orderingProblems": [],
+    "runtimeSortedBoundaryNotices": [
+      {
+        "location": "AC.perf.climbPerf.aeo_30min_ai_off.rightBoundary",
+        "key": "oat",
+        "index": 1
+      },
+      {
+        "location": "AC.perf.climbPerf.aeo_mcp_ai_off.rightBoundary",
+        "key": "oat",
+        "index": 1
+      },
+      {
+        "location": "AC.perf.climbPerf.oei_30min_ai_off.rightBoundary",
+        "key": "oat",
+        "index": 1
+      },
+      {
+        "location": "AC.perf.climbPerf.oei_mcp_ai_off.rightBoundary",
+        "key": "oat",
+        "index": 1
+      }
+    ]
+  },
+  "sweep": {
+    "calls": 480420,
+    "exceptions": [],
+    "nonFinite": [],
+    "successes": {
+      "transfer": 828,
+      "power": 776,
+      "hover": 12231,
+      "heightLoss": 69716,
+      "safeReject": 67133,
+      "climb": 153990,
+      "hoge": 45102,
+      "powerAssurance": 28080
+    },
+    "failures": {
+      "hoge:da_outside_curve": 6231,
+      "climb:cannot_climb": 11994,
+      "hoge:wind_outside_curve": 20703,
+      "power:temp_outside_curve": 52,
+      "hover:cannot_hover": 2673,
+      "safeReject:wind_outside_curve": 16,
+      "climb:oat_above_max": 22800,
+      "safeReject:tv_outside_curve": 4887,
+      "heightLoss:wind_outside_curve": 2320,
+      "powerAssurance:engtq_outside_curve": 22464,
+      "powerAssurance:pa_no_band": 8424
+    }
+  },
+  "drawing": {
+    "calls": 25,
+    "exceptions": [],
+    "nonFinite": []
+  },
+  "paOverlayComparison": [
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "eng_tq": 65,
+        "eng_tit": 700,
+        "engineNum": 1,
+        "onGround": false
+      },
+      "result": {
+        "ok": true,
+        "bandKey": "low",
+        "engineNum": 1,
+        "chartTIT": 771.8992676193074,
+        "engTIT": 700,
+        "margin": 71.89926761930735,
+        "pass": true
+      },
+      "representedTIT": 771.4426119954115,
+      "deltaC": -0.4566556238958128
+    },
+    {
+      "inputs": {
+        "pa": 0,
+        "oat": 15,
+        "eng_tq": 65,
+        "eng_tit": 700,
+        "engineNum": 2,
+        "onGround": false
+      },
+      "result": {
+        "ok": true,
+        "bandKey": "low",
+        "engineNum": 2,
+        "chartTIT": 779.2872211678604,
+        "engTIT": 700,
+        "margin": 79.28722116786037,
+        "pass": true
+      },
+      "representedTIT": 777.4096723232942,
+      "deltaC": -1.8775488445661495
+    },
+    {
+      "inputs": {
+        "pa": 3000,
+        "oat": 15,
+        "eng_tq": 65,
+        "eng_tit": 700,
+        "engineNum": 1,
+        "onGround": false
+      },
+      "result": {
+        "ok": true,
+        "bandKey": "mid",
+        "engineNum": 1,
+        "chartTIT": 796.952690736844,
+        "engTIT": 700,
+        "margin": 96.95269073684403,
+        "pass": true
+      },
+      "representedTIT": 796.12465565072,
+      "deltaC": -0.8280350861240322
+    },
+    {
+      "inputs": {
+        "pa": 3000,
+        "oat": 15,
+        "eng_tq": 65,
+        "eng_tit": 700,
+        "engineNum": 2,
+        "onGround": false
+      },
+      "result": {
+        "ok": true,
+        "bandKey": "mid",
+        "engineNum": 2,
+        "chartTIT": 807.1922703049219,
+        "engTIT": 700,
+        "margin": 107.19227030492186,
+        "pass": true
+      },
+      "representedTIT": 806.9909829478395,
+      "deltaC": -0.20128735708237855
+    }
+  ]
+}
